@@ -9,115 +9,86 @@
 #include <memory>
 #include <mutex>
 
+#include <array>
 #include <opencv2/core/core.hpp>
 #include <opencv2/core/types_c.h>
 #include <stdio.h>
 #include <string>
-#include <array>
 
 #include "SignDetection.hpp"
 #include "StopSignDetection.cpp"
-#include "linearAcceleration.cpp"
 #include "countCars.hpp"
+#include "imageProccesing.cpp"
 #include "leadCarScan.cpp"
 
 using namespace std;
 using namespace cv;
 
 Mat GetCroppedImage(Mat img);
-array<bool, 3> ShapeDetection(Mat img, bool VERBOSE);
+array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO);
 
 //****CLASSES:****
 StopSignDetection ssd;
 leadCarScan leadCar;
 countCars ccars;
+imageProccesing imgProc;
 
-//COUNTING CARS: (where to move these since they are used in the functions?)
-int amountOfCars = 0;    //should be 0
-int maxAmountOfCars = 3; //not used
 int mode = 0;
-int leftCar = 0;
-int rightCar = 0;
-int frontCar = 0;
 
-Mat getInterval(Mat img, string color)
-{
-  Mat hsvImg;
-
-  cvtColor(img, hsvImg, COLOR_BGR2HSV);
-  Mat intervalOutput;
-
-  if (color == "black")
-  { //black
-    inRange(hsvImg, Scalar(0, 0, 0), Scalar(180, 255, 30), intervalOutput);
-  }
-  if (color == "orange")
-  { //orange
-    inRange(hsvImg, Scalar(2, 130, 154), Scalar(23, 166, 255), intervalOutput);
-  }
-  else if (color == "green")
-  { //green
-    inRange(hsvImg, Scalar(30, 80, 125), Scalar(55, 255, 255), intervalOutput);
-  }
-  return intervalOutput;
-}
-
-bool scanForStopSign(Mat img, bool VERBOSE, bool VIDEO)
-{
-  if (ssd.Threshhold_reached == false)
-  {
+bool scanForStopSign(Mat img, bool VERBOSE, bool VIDEO) {
+  if (ssd.Threshhold_reached == false) {
     ssd.run(img, VERBOSE, VIDEO);
-  }
-  else
-  {
+  } else {
     // cout << "-- Exiting stopsign detection."
     //       << " -- Failed frames: " << ssd.failed_frames << endl;
   }
   return ssd.Threshhold_reached;
 }
 
-void scanForCarInLeft(const Mat &image)
-{
-  leftCar = ccars.findCars(image, 0, leftCar);
+// GET ULTRASONIC/IR-SENSOR VALUES:
+const int MAXCOUNT = 3;
+float frontSensorData[MAXCOUNT];
+float leftSensorData[MAXCOUNT];
+
+float getSensorData(float distanceMessage, int sendStamp, float &totalSum,
+                    int &counter, bool &gotNewDataFromLeft, int &falseCounter);
+
+int scanForCarInLeft(const Mat &image, int leftCar) {
+  return ccars.findCars(image, 0, leftCar);
 }
 
-void scanForCarInFront(const Mat &image)
-{
-  frontCar = ccars.findCars(image, 1, frontCar);
+int scanForCarInFront(const Mat &image, int frontCar) {
+  return ccars.findCars(image, 1, frontCar);
 }
 
-void scanForCarInRight(const Mat &image)
-{
-  rightCar = ccars.findCars(image, 2, rightCar);
+int scanForCarInRight(const Mat &image, int rightCar) {
+  return ccars.findCars(image, 2, rightCar);
 }
 
-void scanForPassingCars(float sensorDistance, int currentAmountOfCars, int sensorType, const Mat &image)
-{
-  amountOfCars = ccars.countPassingCars(sensorDistance, currentAmountOfCars, sensorType, image);
+int scanForPassingCars(float sensorDistance, int currentAmountOfCars,
+                       int sensorType, Mat image) {
+  return ccars.countPassingCars(sensorDistance, currentAmountOfCars, sensorType,
+                                image);
 }
 
 //: ACC
 //: scan for the car to get the contour
 double areaOfContour;
-
-std::array<bool, 3> scanForTrafficSigns(Mat img, bool VERBOSE)
-{
-  std::array<bool, 3> trafficRules = ShapeDetection(img, VERBOSE);
+std::array<bool, 3> scanForTrafficSigns(Mat img, bool VERBOSE, bool VIDEO) {
+  std::array<bool, 3> trafficRules = ShapeDetection(img, VERBOSE, VIDEO);
   return trafficRules;
 }
 
 void listenToCommand() {}
 
-int32_t main(int32_t argc, char **argv)
-{
+int32_t main(int32_t argc, char **argv) {
 
   int32_t retCode{1};
   auto commandlineArguments = cluon::getCommandlineArguments(argc, argv);
   if ((0 == commandlineArguments.count("cid")) ||
       (0 == commandlineArguments.count("name")) ||
       (0 == commandlineArguments.count("width")) ||
-      (0 == commandlineArguments.count("height")))
-  {
+      (0 == commandlineArguments.count("height"))) {
     cerr << argv[0]
          << " attaches to a shared memory area containing an ARGB image."
          << endl;
@@ -141,11 +112,25 @@ int32_t main(int32_t argc, char **argv)
             "miss, should be 1-3"
          << endl;
     cerr << "         --minarea: the minumum area of stopsign" << endl;
-  }
-  else
-  {
+  } else {
 
     DriveMode driveMode;
+
+    ////**COUNTING CARS:**////
+    int amountOfCars = 0; // should be 0, only 3 for testing count passing cars
+    int leftCar = 0;
+    int frontCar = 0;
+    int rightCar = 0;
+    // ultrasonic:
+    bool gotNewDataFromLeft;
+    int falseCounter = 0;
+    // float average = 0;
+    float frontTotalSum = 0;
+    float leftTotalSum = 0;
+    int frontCounter = 0;
+    int leftCounter = 0;
+    float frontSensorValue = 0.0;
+    float leftSensorValue = 0.0;
 
     const string NAME{commandlineArguments["name"]};
     const uint32_t WIDTH{
@@ -154,13 +139,12 @@ int32_t main(int32_t argc, char **argv)
         static_cast<uint32_t>(stoi(commandlineArguments["height"]))};
     const bool VERBOSE{commandlineArguments.count("verbose") != 0};
     const bool VIDEO{commandlineArguments.count("video") != 0};
-    float CARSPEED = 0.1;
-    int MINAREA = 1000;
-    int NRSIGN = 5;
+    // double CARSPEED = 0.1;
+    // int MINAREA = 1000;
+    // int NRSIGN = 5;
     // Attach to the shared memory.
     unique_ptr<cluon::SharedMemory> sharedMemory{new cluon::SharedMemory{NAME}};
-    if (sharedMemory && sharedMemory->valid())
-    {
+    if (sharedMemory && sharedMemory->valid()) {
       clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name()
            << " (" << sharedMemory->size() << " bytes)." << endl;
 
@@ -170,8 +154,7 @@ int32_t main(int32_t argc, char **argv)
           static_cast<uint16_t>(stoi(commandlineArguments["cid"]))};
 
       // Endless loop; end the program by pressing Ctrl-C.
-      while (od4.isRunning())
-      {
+      while (od4.isRunning()) {
         Mat img;
         sharedMemory->wait();
         sharedMemory->lock();
@@ -181,65 +164,102 @@ int32_t main(int32_t argc, char **argv)
         }
         sharedMemory->unlock();
 
+        LinearAcceleration linAcc;
         TrafficRules trafficSignRules;
         CalibrateSteering calibrateSteering;
         bool stopSignFound;
         std::array<bool, 3> trafficRules;
         double AreaOfContour;
 
-        Mat greenInputImage = getInterval(img, "green");
-        Mat blackInputImage = getInterval(img, "black");
-        Mat orangeInputImage = getInterval(img, "orange");
+        //: preforms imgage proccesing for the images , so the fucntions can use
+        // commonly used images, like the croped image
+        imgProc.setImage(img);
 
-        switch (mode)
-        {
+        switch (mode) {
         case 0:
-          stopSignFound = scanForStopSign(img, VERBOSE, VIDEO);
+          stopSignFound =
+              scanForStopSign(imgProc.rightSideImageGreyScaled, VERBOSE, VIDEO);
           driveMode.stopSign(stopSignFound);
           driveMode.followLead(!stopSignFound);
           od4.send(driveMode);
 
-          scanForCarInLeft(greenInputImage);
+          leftCar = scanForCarInLeft(imgProc.greenInterval, leftCar);
 
-          //calibrating steering angle
-          AreaOfContour = leadCar.findLeadCar(orangeInputImage, VIDEO);
-          calibrateSteering.CalibrateSteeringAngle(leadCar.CalibrateSteeringAngle(AreaOfContour, orangeInputImage, VERBOSE));
+          // calibrating steering angle
+          AreaOfContour = leadCar.findLeadCar(imgProc.orangeInterval, VIDEO);
+          calibrateSteering.CalibrateSteeringAngle(
+              leadCar.CalibrateSteeringAngle(AreaOfContour,
+                                             imgProc.orangeInterval, VERBOSE));
           od4.send(calibrateSteering);
 
-          trafficRules = scanForTrafficSigns(img, VERBOSE);
-          if (!trafficRules[0])
-            cout << "TRAFFIC LEFT " << endl;
-          if (!trafficRules[1])
-            cout << "TRAFFIC FORWARD" << endl;
-          if (!trafficRules[2])
-            cout << "TRAFFIC RIGHT" << endl;
+          //: ACC
+          // cout << "Lead car contour: " << AreaOfContour << endl;
+          linAcc.contourArea(AreaOfContour);
+          od4.send(linAcc);
+
+          trafficRules = scanForTrafficSigns(img, VERBOSE, VIDEO);
           trafficSignRules.leftAllowed(trafficRules[0]);
           trafficSignRules.forwardAllowed(trafficRules[1]);
-
           trafficSignRules.rightAllowed(trafficRules[2]);
           od4.send(trafficSignRules);
 
-          //CALCULATE CARS:
+          // CALCULATE CARS:
           amountOfCars = leftCar + frontCar + rightCar;
           break;
 
         case 1:
-          scanForCarInFront(greenInputImage);
-          scanForCarInRight(greenInputImage);
+          frontCar = scanForCarInFront(imgProc.greenInterval, frontCar);
+          rightCar = scanForCarInRight(imgProc.greenInterval, rightCar);
           // listenToCommand();
 
-          //CALCULATE CARS:
+          // CALCULATE CARS:
           amountOfCars = leftCar + frontCar + rightCar;
           break;
 
         case 2:
-          if (amountOfCars == 0)
-          {
-            //drive out of intersection routine
-          }
-          else
-          {
-            // scanForPassingCars(blackInputImage);
+          if (amountOfCars == 0) {
+            // drive out of intersection routine
+          } else {
+            auto onDistanceReading{[VERBOSE, &od4, &gotNewDataFromLeft,
+                                    &leftSensorValue, &frontSensorValue,
+                                    &frontTotalSum, &frontCounter, &leftCounter,
+                                    &leftTotalSum, &falseCounter](
+                                       cluon::data::Envelope &&envelope) {
+              auto msg = cluon::extractMessage<opendlv::proxy::DistanceReading>(
+                  std::move(envelope));
+              const uint16_t senderStamp =
+                  envelope.senderStamp(); // Local variables are not available
+
+              gotNewDataFromLeft = false;
+
+              if (senderStamp == 0) {
+                frontSensorValue = getSensorData(
+                    msg.distance(), 0, frontTotalSum, frontCounter,
+                    gotNewDataFromLeft, falseCounter);
+              } else if (senderStamp == 1) {
+                leftSensorValue =
+                    getSensorData(msg.distance(), 1, leftTotalSum, leftCounter,
+                                  gotNewDataFromLeft, falseCounter);
+              }
+            }};
+            od4.dataTrigger(opendlv::proxy::DistanceReading::ID(),
+                            onDistanceReading);
+            //  **Credit: --->this code is based on example_control code, end*
+
+            // count how many cars pass by and remove from frontCounter
+            amountOfCars = scanForPassingCars(frontSensorValue, amountOfCars, 0,
+                                              imgProc.blackInterval);
+
+            if (!gotNewDataFromLeft) {
+              falseCounter++;
+            }
+            if (falseCounter >= 5) { // needed for the left sensor
+              amountOfCars =
+                  scanForPassingCars(0, amountOfCars, 1, imgProc.blackInterval);
+            } else {
+              amountOfCars = scanForPassingCars(leftSensorValue, amountOfCars,
+                                                1, imgProc.blackInterval);
+            }
           }
           break;
         }
@@ -248,4 +268,47 @@ int32_t main(int32_t argc, char **argv)
     retCode = 0;
   }
   return retCode;
+}
+
+float getSensorData(float distanceMessage, int sendStamp, float &totalSum,
+                    int &counter, bool &gotNewDataFromLeft, int &falseCounter) {
+
+  float avg;
+
+  if (sendStamp == 0) { // front sensor
+    float frontValue = distanceMessage;
+    if (counter < MAXCOUNT) {
+      frontSensorData[counter] = distanceMessage;
+      counter++;
+    } else {
+      for (int i = 0; i < MAXCOUNT; i++) {
+        totalSum += frontSensorData[i];
+      }
+      avg = totalSum / MAXCOUNT;
+      frontValue = avg;
+      counter = 0;
+      totalSum = 0;
+    }
+    return frontValue;
+  }
+
+  if (sendStamp == 1) { // left sensor
+    float leftValue = distanceMessage;
+    gotNewDataFromLeft = true;
+    falseCounter = 0;
+    if (counter < MAXCOUNT) {
+      leftSensorData[counter] = distanceMessage;
+      counter++;
+    } else {
+      for (int i = 0; i < MAXCOUNT; i++) {
+        totalSum += leftSensorData[i];
+      }
+      avg = totalSum / MAXCOUNT;
+      leftValue = avg;
+      counter = 0;
+      totalSum = 0;
+    }
+    return leftValue;
+  }
+  return -1;
 }

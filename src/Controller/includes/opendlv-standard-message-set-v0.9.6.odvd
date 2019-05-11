@@ -194,7 +194,7 @@ message TrafficRules [id = 2003] {
 }
 
 message LinearAcceleration [id = 2004] {
-  float speed [id = 1];
+  double contourArea [id = 1];
 }
 
 message DriveMode [id = 2005] {
