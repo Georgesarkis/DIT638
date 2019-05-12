@@ -79,8 +79,6 @@ std::array<bool, 3> scanForTrafficSigns(Mat img, bool VERBOSE, bool VIDEO) {
   return trafficRules;
 }
 
-void listenToCommand() {}
-
 int32_t main(int32_t argc, char **argv) {
 
   int32_t retCode{1};
@@ -103,15 +101,9 @@ int32_t main(int32_t argc, char **argv) {
          << endl;
     cerr << "         --width:  width of the frame" << endl;
     cerr << "         --height: height of the frame" << endl;
-    cerr << "         --height: height of the frame" << endl;
     cerr << "         --video: indicates whether the video feed should be "
             "displayed"
          << endl;
-    cerr << "         --carspeed: the speed of the car" << endl;
-    cerr << "         --nrsign: the number of stopsigns the car is allowed to "
-            "miss, should be 1-3"
-         << endl;
-    cerr << "         --minarea: the minumum area of stopsign" << endl;
   } else {
 
     DriveMode driveMode;
@@ -153,6 +145,9 @@ int32_t main(int32_t argc, char **argv) {
       cluon::OD4Session od4{
           static_cast<uint16_t>(stoi(commandlineArguments["cid"]))};
 
+      driveMode.directionInstruction(false);
+      od4.send(driveMode);
+
       // Endless loop; end the program by pressing Ctrl-C.
       while (od4.isRunning()) {
         Mat img;
@@ -179,10 +174,7 @@ int32_t main(int32_t argc, char **argv) {
         case 0:
           stopSignFound =
               scanForStopSign(imgProc.rightSideImageGreyScaled, VERBOSE, VIDEO);
-          driveMode.stopSign(stopSignFound);
-          driveMode.followLead(!stopSignFound);
-          od4.send(driveMode);
-
+          if(!stopSignFound) mode = 1;
           leftCar = scanForCarInLeft(imgProc.greenInterval, leftCar);
 
           // calibrating steering angle
@@ -210,14 +202,12 @@ int32_t main(int32_t argc, char **argv) {
         case 1:
           frontCar = scanForCarInFront(imgProc.greenInterval, frontCar);
           rightCar = scanForCarInRight(imgProc.greenInterval, rightCar);
-          // listenToCommand();
 
           // CALCULATE CARS:
           amountOfCars = leftCar + frontCar + rightCar;
-          break;
-
-        case 2:
           if (amountOfCars == 0) {
+            driveMode.directionInstruction(true);
+            od4.send(driveMode);
             // drive out of intersection routine
           } else {
             auto onDistanceReading{[VERBOSE, &od4, &gotNewDataFromLeft,
