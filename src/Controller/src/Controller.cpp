@@ -29,6 +29,7 @@ int32_t main(int32_t argc, char **argv) {
     bool TurnLeft, TurnRight, GoForward;
     bool directionInstructionMode;
 
+    //: recive trafic sign rules.
     od4.dataTrigger(2003, [&TurnLeft, &TurnRight,
                            &GoForward](cluon::data::Envelope &&envelope) {
       TrafficRules trafficSignRules =
@@ -40,6 +41,7 @@ int32_t main(int32_t argc, char **argv) {
     });
 
 
+    //: Driving out of the intersection
     od4.dataTrigger(2001, [&od4, &TurnLeft, &TurnRight, &GoForward, &pedalReq,
                           &steerReq](cluon::data::Envelope &&envelope) {
       DirectionInstruction receivedMsg =
@@ -91,6 +93,7 @@ int32_t main(int32_t argc, char **argv) {
       od4.send(responseMsg);
     });
 
+    //: LinearAcceleration logic
     od4.dataTrigger(2004, [&od4, &pedalReq](cluon::data::Envelope &&envelope) {
       LinearAcceleration linAccSpeed =
           cluon::extractMessage<LinearAcceleration>(std::move(envelope));
@@ -104,12 +107,14 @@ int32_t main(int32_t argc, char **argv) {
       od4.send(pedalReq);
     });
 
+    //: Setting the drive-mode
     od4.dataTrigger(2005, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
       DriveMode currentDriveMode =
           cluon::extractMessage<DriveMode>(std::move(envelope));
           directionInstructionMode = currentDriveMode.directionInstruction();
     });
 
+    //: Calibrate steering
     od4.dataTrigger(2006, [&od4, &steerReq](cluon::data::Envelope &&envelope) {
       CalibrateSteering calibrateSteering =
           cluon::extractMessage<CalibrateSteering>(std::move(envelope));
