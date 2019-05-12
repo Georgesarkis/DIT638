@@ -27,6 +27,7 @@ int32_t main(int32_t argc, char **argv) {
     opendlv::proxy::PedalPositionRequest pedalReq;
     opendlv::proxy::GroundSteeringReading steerReq;
     bool TurnLeft, TurnRight, GoForward;
+    bool directionInstructionMode;
 
     od4.dataTrigger(2003, [&TurnLeft, &TurnRight,
                            &GoForward](cluon::data::Envelope &&envelope) {
@@ -36,29 +37,18 @@ int32_t main(int32_t argc, char **argv) {
       TurnLeft = trafficSignRules.leftAllowed();
       TurnRight = trafficSignRules.rightAllowed();
       GoForward = trafficSignRules.forwardAllowed();
-
-      // THIS SECTION FOR TESTING. SETTING VARIABLES WILL BE ENOUGH FOR THIS
-      // TRIGGER
-      if (!trafficSignRules.leftAllowed()) {
-        cout << "LEFT" << endl;
-      }
-      if (!trafficSignRules.rightAllowed()) {
-        cout << "RIGHT" << endl;
-      }
-      if (!trafficSignRules.forwardAllowed()) {
-        cout << "FORWARD" << endl;
-      }
     });
 
+
     od4.dataTrigger(2001, [&od4, &TurnLeft, &TurnRight, &GoForward, &pedalReq,
-                           &steerReq](cluon::data::Envelope &&envelope) {
+                          &steerReq](cluon::data::Envelope &&envelope) {
       DirectionInstruction receivedMsg =
           cluon::extractMessage<DirectionInstruction>(std::move(envelope));
       DirectionResponse responseMsg;
       std::cout << "RECEIVED DIRECTION: " << receivedMsg.direction()
                 << std::endl;
       if (directionAllowed(receivedMsg.direction(), TurnLeft, TurnRight,
-                           GoForward)) {
+                          GoForward) && directionInstructionMode) {
         std::cout << "ALLOWED. DRIVING NOW" << endl;
         responseMsg.response("Direction allowed");
 
@@ -114,16 +104,10 @@ int32_t main(int32_t argc, char **argv) {
       od4.send(pedalReq);
     });
 
-    od4.dataTrigger(2005, [&od4](cluon::data::Envelope &&envelope) {
+    od4.dataTrigger(2005, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
       DriveMode currentDriveMode =
           cluon::extractMessage<DriveMode>(std::move(envelope));
-      // std::cout << "DRIVE MODE: " << currentDriveMode.followLead() <<
-      // std::endl;
-      if (currentDriveMode.followLead()) {
-        // CHECK FOR LEFT LANE CAR
-      } else if (currentDriveMode.stopSign()) {
-        // CHECK FOR RIGHT AND OPPOSITE LANE CAR
-      }
+          directionInstructionMode = currentDriveMode.directionInstruction();
     });
 
     od4.dataTrigger(2006, [&od4, &steerReq](cluon::data::Envelope &&envelope) {
