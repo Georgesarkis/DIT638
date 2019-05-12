@@ -9,10 +9,10 @@ class linearAcceleration {
 
 public:
   double getSpeed(double in);
-  double max_thresh;
-  double low_thresh;
-  double outOfBounds_thresh;
-  double car_speed_max;
+  double max_thresh = 0;
+  double low_thresh = 0;
+  double outOfBounds_thresh = 0;
+  double car_speed_max = 0;
   bool VERBOSE = false;
   void setVERBOSE(bool in);
 };
@@ -33,7 +33,7 @@ double linearAcceleration::getSpeed(double in) {
   if (in <= low_thresh) {
 
     if (VERBOSE)
-      std::cout << "Lead car is close ... Stoping" << endl;
+      cout << "Lead car is close ... Stoping" << endl;
 
     return 0;
 
@@ -41,7 +41,7 @@ double linearAcceleration::getSpeed(double in) {
   } else if ((in < max_thresh) && (in > low_thresh)) {
 
     if (VERBOSE)
-      std::cout << "Lead car inside threashhold, Driving normally" << std::endl;
+      cout << "Lead car inside threashhold, Driving normally" << endl;
 
     return map(in, low_thresh, max_thresh, 0, car_speed_max);
 
@@ -49,8 +49,7 @@ double linearAcceleration::getSpeed(double in) {
   } else if ((in > max_thresh) && (in < outOfBounds_thresh)) {
 
     if (VERBOSE)
-      std::cout << "Lead car is too far away... Driving at max speed"
-                << std::endl;
+      cout << "Lead car is too far away... Driving at max speed" << endl;
 
     return car_speed_max;
 
@@ -58,11 +57,12 @@ double linearAcceleration::getSpeed(double in) {
   } else if (in >= outOfBounds_thresh) {
 
     if (VERBOSE)
-      std::cout << "No lead car found, Driving at half max speed" << std::endl;
+      cout << "No lead car found, Driving at half max speed" << endl;
 
     return car_speed_max / 2;
 
   } else {
-    std::cout << "Error Logic Wrong" << std::endl;
+    cout << "Error Logic Wrong" << endl;
+    return 0;
   }
 }
