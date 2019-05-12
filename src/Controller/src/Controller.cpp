@@ -43,7 +43,7 @@ int32_t main(int32_t argc, char **argv) {
 
     //: Driving out of the intersection
     od4.dataTrigger(2001, [&od4, &TurnLeft, &TurnRight, &GoForward, &pedalReq,
-                          &steerReq](cluon::data::Envelope &&envelope) {
+                          &steerReq, &directionInstructionMode](cluon::data::Envelope &&envelope) {
       DirectionInstruction receivedMsg =
           cluon::extractMessage<DirectionInstruction>(std::move(envelope));
       DirectionResponse responseMsg;
