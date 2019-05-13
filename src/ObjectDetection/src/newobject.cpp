@@ -52,7 +52,7 @@ int32_t main(int32_t argc, char **argv) {
             
             int mode;
 
-            od4.dataTrigger(2005, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
+            od4.dataTrigger(2005, [&od4, &mode](cluon::data::Envelope &&envelope) {
               DriveMode currentDriveMode = cluon::extractMessage<DriveMode>(std::move(envelope));
               mode = currentDriveMode.mode();
             });
@@ -75,16 +75,18 @@ int32_t main(int32_t argc, char **argv) {
             int leftCounter = 0;
             float frontSensorValue = 0.0;
             float leftSensorValue = 0.0;
-
-            DriveMode driveMode;
-            driveMode.directionInstruction(false); //drivemode initially set to false because we're not ready to receive instruction
-            od4.send(driveMode);
             
             std::array<bool, 3> trafficRules;
             TrafficRules trafficSignRules;
             opendlv::proxy::PedalPositionRequest pedalReq;
 
+                            DriveMode driveMode;
+                driveMode.directionInstruction(false); //drivemode initially set to false because we're not ready to receive instruction
+                driveMode.atStopSign(false);
+                od4.send(driveMode);
+
             while(od4.isRunning()){
+
                 Mat img;
                 sharedMemory->wait();
                 sharedMemory->lock();
@@ -105,15 +107,15 @@ int32_t main(int32_t argc, char **argv) {
 
                     if(ssd.Threshhold_reached){ 
                         cout << "at stop sign" << endl;
-                        driveMode.atStopSign(true);
-                        od4.send(driveMode);
 
                         trafficSignRules.leftAllowed(trafficRules[0]);
                         trafficSignRules.forwardAllowed(trafficRules[1]);
                         trafficSignRules.rightAllowed(trafficRules[2]);
                         od4.send(trafficSignRules); 
                                               
-                        mode = 1; //TODO delete this after the od4 is tested
+                        driveMode.atStopSign(true);
+                        od4.send(driveMode);
+                        //mode = 1; //TODO delete this after the od4 is tested
                     }
                     //TODO add linearacceleration
                     //TODO add calibration
