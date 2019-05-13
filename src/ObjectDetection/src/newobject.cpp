@@ -114,7 +114,7 @@ int32_t main(int32_t argc, char **argv) {
                     leftCar = ccars.findCars(greenInputImage, 0, leftCar);
                     amountOfCars = leftCar + frontCar + rightCar;
                 } else {
-                    pedalReq.position(0f);
+                    pedalReq.position(0.0f);
                     od4.send(pedalReq);
                     bool runOnce = true;
                     if(runOnce){
