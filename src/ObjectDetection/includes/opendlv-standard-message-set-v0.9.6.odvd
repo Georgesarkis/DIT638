@@ -198,7 +198,8 @@ message LinearAcceleration [id = 2004] {
 }
 
 message DriveMode [id = 2005] {
-  bool directionInstruction [id = 1];
+  bool atStopSign [id = 1];
+  bool directionInstruction [id = 2];
 }
 
 message CalibrateSteering [id = 2006] {

@@ -30,14 +30,17 @@ int32_t main(int32_t argc, char **argv) {
     bool directionInstructionMode;
 
     //: recive trafic sign rules.
-    od4.dataTrigger(2003, [&TurnLeft, &TurnRight,
-                           &GoForward](cluon::data::Envelope &&envelope) {
+    od4.dataTrigger(2003, [&TurnLeft, &TurnRight, &GoForward](cluon::data::Envelope &&envelope) {
+      cout << "RECEIVED TRAFFIC SIGN MESSAGE" << endl;
       TrafficRules trafficSignRules =
           cluon::extractMessage<TrafficRules>(std::move(envelope));
 
       TurnLeft = trafficSignRules.leftAllowed();
       TurnRight = trafficSignRules.rightAllowed();
       GoForward = trafficSignRules.forwardAllowed();
+      if(TurnLeft) cout << "CAN DRIVE LEFT" << endl;
+      if(GoForward) cout << "CAN DRIVE FORWARD" << endl;
+      if(TurnRight) cout << "CAN DRIVE RIGHT" << endl;
     });
 
 
@@ -107,17 +110,20 @@ int32_t main(int32_t argc, char **argv) {
       od4.send(pedalReq);
     });
 
+    bool directionInstructionMode;
+
+
     //: Setting the drive-mode
     od4.dataTrigger(2005, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
       DriveMode currentDriveMode =
           cluon::extractMessage<DriveMode>(std::move(envelope));
-          bool stopSignFound = currentDriveMode.directionInstruction();
+          bool startDirectionInstructionMode = currentDriveMode.directionInstruction();
           cout << "STOP SIGN TRIGGER" << endl;
-          if(!stopSignFound){
-            cout << "AT STOP SIGN" << endl;
+          if(startDirectionInstructionMode){
+            cout << "ready for instruction" << endl;
             currentDriveMode.mode(1);
           } else {
-            cout << "SEEING STOP SIGN" << endl;
+            cout << "Not ready for instruction" << endl;
             currentDriveMode.mode(0);
           }
     });

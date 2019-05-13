@@ -95,7 +95,7 @@ int32_t main(int32_t argc, char **argv) {
                     if(stopSignFound){ 
                         cout << "at stop sign" << endl;
                         mode = 1; //TODO delete this after the od4 is tested
-                        driveMode.directionInstruction(false);
+                        driveMode.atStopSign(true);
                         od4.send(driveMode);
                     }
                     //TODO add linearacceleration
@@ -121,18 +121,18 @@ int32_t main(int32_t argc, char **argv) {
                         driveMode.directionInstruction(true);
                         od4.send(driveMode);
                     } else {
-                        auto onDistanceReading{[&od4, &gotNewDataFromLeft,&leftSensorValue, &frontSensorValue,
-                                    &frontTotalSum, &frontCounter, &leftCounter,&leftTotalSum, &falseCounter](cluon::data::Envelope &&envelope) {
-                        auto msg = cluon::extractMessage<opendlv::proxy::DistanceReading>(std::move(envelope));
-                        const uint16_t senderStamp = envelope.senderStamp(); // Local variables are not available
-
-                        gotNewDataFromLeft = false;
-
-                        if (senderStamp == 0) {
-                            frontSensorValue = getSensorData(msg.distance(), 0, frontTotalSum, frontCounter,gotNewDataFromLeft, falseCounter);
-                        } else if (senderStamp == 1) {
-                            leftSensorValue = getSensorData(msg.distance(), 1, leftTotalSum, leftCounter,gotNewDataFromLeft, falseCounter);
-                        }}};
+                        auto onDistanceReading{
+                            [&od4, &gotNewDataFromLeft,&leftSensorValue, &frontSensorValue,&frontTotalSum, &frontCounter, &leftCounter,&leftTotalSum, &falseCounter](cluon::data::Envelope &&envelope) {
+                            auto msg = cluon::extractMessage<opendlv::proxy::DistanceReading>(std::move(envelope));
+                            const uint16_t senderStamp = envelope.senderStamp(); // Local variables are not available
+                            gotNewDataFromLeft = false;
+                                if (senderStamp == 0) {
+                                    frontSensorValue = getSensorData(msg.distance(), 0, frontTotalSum, frontCounter,gotNewDataFromLeft, falseCounter);
+                                } else if (senderStamp == 1) {
+                                    leftSensorValue = getSensorData(msg.distance(), 1, leftTotalSum, leftCounter,gotNewDataFromLeft, falseCounter);
+                                }
+                            }
+                        };
                         od4.dataTrigger(opendlv::proxy::DistanceReading::ID(),onDistanceReading);
                         //  **Credit: --->this code is based on example_control code, end*
 
