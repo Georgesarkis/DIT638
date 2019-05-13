@@ -119,7 +119,7 @@ int32_t main(int32_t argc, char **argv) {
                         driveMode.directionInstruction(true);
                         od4.send(driveMode);
                     } else {
-                        auto onDistanceReading{[VERBOSE, &od4, &gotNewDataFromLeft,&leftSensorValue, &frontSensorValue,
+                        auto onDistanceReading{[&od4, &gotNewDataFromLeft,&leftSensorValue, &frontSensorValue,
                                     &frontTotalSum, &frontCounter, &leftCounter,&leftTotalSum, &falseCounter](cluon::data::Envelope &&envelope) {
                         auto msg = cluon::extractMessage<opendlv::proxy::DistanceReading>(std::move(envelope));
                         const uint16_t senderStamp = envelope.senderStamp(); // Local variables are not available
