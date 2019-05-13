@@ -17,6 +17,7 @@ using namespace std;
 using namespace cv;
 
 StopSignDetection ssd;
+Mat getInterval(Mat img, string color);
 
 int32_t main(int32_t argc, char **argv) {
      int32_t retCode{1};
@@ -40,16 +41,21 @@ int32_t main(int32_t argc, char **argv) {
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
             
             int mode = 0;
+            int amountOfCars = 0;
+            int leftCar = 0;
+            int frontCar = 0;
+            int rightCar = 0;
 
+            DriveMode driveMode;
             driveMode.directionInstruction(false);
             od4.send(driveMode);
 
-            od4.dataTrigger(2005, [&od4](cluon::data::Envelope &&envelope) {
+            od4.dataTrigger(2005, [&od4, &mode, &driveMode](cluon::data::Envelope &&envelope) {
                 DriveMode currentDriveMode =
                     cluon::extractMessage<DriveMode>(std::move(envelope));
                 mode = driveMode.mode();
                 cout << "mode: " << mode << endl;
-            }
+            });
             
             std::array<bool, 3> trafficRules;
             TrafficRules trafficSignRules;
@@ -64,24 +70,60 @@ int32_t main(int32_t argc, char **argv) {
                 }
                 sharedMemory->unlock();
 
-                ssd.run(img , true, true);
-                bool stopSignFound = ssd.Threshhold_reached;
-                if(!stopSignFound){ 
-                    driveMode.directionInstruction(false);
-                    od4.send(driveMode);
+                Mat greenInputImage = getInterval(img, "green");
+
+                if(mode == 0){
+                    ssd.run(img , true, true);
+                    bool stopSignFound = ssd.Threshhold_reached;
+                    if(!stopSignFound){ 
+                        driveMode.directionInstruction(false);
+                        od4.send(driveMode);
+                    }
+                    //TODO add linearacceleration
+                    //TODO add calibration
+
+                    trafficRules = scanForTrafficSigns(img, true, true);
+                    cout << "left: " << trafficRules[0] << endl; 
+                    cout << "for: " << trafficRules[1] << endl; 
+                    cout << "right: " << trafficRules[2] << endl; 
+
+                    trafficSignRules.leftAllowed(trafficRules[0]);
+                    trafficSignRules.forwardAllowed(trafficRules[1]);
+                    trafficSignRules.rightAllowed(trafficRules[2]);
+                    od4.send(trafficSignRules);     
+
+                    leftCar = scanForCarInLeft(greenInputImage, leftCar);
+                    amountOfCars = leftCar + frontCar + rightCar;
+                } else {
+                    
                 }
 
-                trafficRules = scanForTrafficSigns(img, VERBOSE, VIDEO);
-                cout << "left: " << trafficRules[0] << endl; 
-                cout << "for: " << trafficRules[1] << endl; 
-                cout << "right: " << trafficRules[2] << endl; 
-
-                trafficSignRules.leftAllowed(trafficRules[0]);
-                trafficSignRules.forwardAllowed(trafficRules[1]);
-                trafficSignRules.rightAllowed(trafficRules[2]);
-                od4.send(trafficSignRules);
             }
         }
     }
-    return 0;
+    return retCode;
+}
+
+
+
+Mat getInterval(Mat img, string color)
+{
+  Mat hsvImg;
+
+  cvtColor(img, hsvImg, COLOR_BGR2HSV);
+  Mat intervalOutput;
+
+  if (color == "black")
+  { //black
+    inRange(hsvImg, Scalar(0, 0, 0), Scalar(180, 255, 30), intervalOutput);
+  }
+  if (color == "orange")
+  { //orange
+    inRange(hsvImg, Scalar(2, 130, 154), Scalar(23, 166, 255), intervalOutput);
+  }
+  else if (color == "green")
+  { //green
+    inRange(hsvImg, Scalar(30, 80, 125), Scalar(55, 255, 255), intervalOutput);
+  }
+  return intervalOutput;
 }
