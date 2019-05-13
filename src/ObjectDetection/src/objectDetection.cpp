@@ -24,6 +24,29 @@
 using namespace std;
 using namespace cv;
 
+
+Mat getInterval(Mat img, string color)
+{
+  Mat hsvImg;
+
+  cvtColor(img, hsvImg, COLOR_BGR2HSV);
+  Mat intervalOutput;
+
+  if (color == "black")
+  { //black
+    inRange(hsvImg, Scalar(0, 0, 0), Scalar(180, 255, 30), intervalOutput);
+  }
+  if (color == "orange")
+  { //orange
+    inRange(hsvImg, Scalar(2, 130, 154), Scalar(23, 166, 255), intervalOutput);
+  }
+  else if (color == "green")
+  { //green
+    inRange(hsvImg, Scalar(30, 80, 125), Scalar(55, 255, 255), intervalOutput);
+  }
+  return intervalOutput;
+}
+
 Mat GetCroppedImage(Mat img);
 array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO);
 
@@ -166,22 +189,25 @@ int32_t main(int32_t argc, char **argv) {
         std::array<bool, 3> trafficRules;
         double AreaOfContour;
 
+
+        Mat greenInputImage = getInterval(img, "green");
+        Mat blackInputImage = getInterval(img, "black");
+        Mat orangeInputImage = getInterval(img, "orange");
+
         //: preforms imgage proccesing for the images , so the fucntions can use
         // commonly used images, like the croped image
         imgProc.setImage(img);
 
         switch (mode) {
         case 0:
-          stopSignFound =
-              scanForStopSign(imgProc.rightSideImageGreyScaled, VERBOSE, VIDEO);
-          if(!stopSignFound) mode = 1;
-          leftCar = scanForCarInLeft(imgProc.greenInterval, leftCar);
+
+          leftCar = scanForCarInLeft(greenInputImage, leftCar);
 
           // calibrating steering angle
-          AreaOfContour = leadCar.findLeadCar(imgProc.orangeInterval, VIDEO);
+          AreaOfContour = leadCar.findLeadCar(orangeInputImage, VIDEO);
           calibrateSteering.CalibrateSteeringAngle(
               leadCar.CalibrateSteeringAngle(AreaOfContour,
-                                             imgProc.orangeInterval, VERBOSE));
+                                             orangeInputImage, VERBOSE));
           od4.send(calibrateSteering);
 
           //: ACC
