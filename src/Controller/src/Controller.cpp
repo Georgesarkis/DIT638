@@ -110,15 +110,12 @@ int32_t main(int32_t argc, char **argv) {
       od4.send(pedalReq);
     });
 
-    bool directionInstructionMode;
-
 
     //: Setting the drive-mode
     od4.dataTrigger(2005, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
       DriveMode currentDriveMode =
           cluon::extractMessage<DriveMode>(std::move(envelope));
-          bool startDirectionInstructionMode = currentDriveMode.directionInstruction();
-          cout << "STOP SIGN TRIGGER" << endl;
+          bool startDirectionInstructionMode = currentDriveMode.directionInstruction(); //e.g at stop sign
           if(startDirectionInstructionMode){
             cout << "ready for instruction" << endl;
             currentDriveMode.mode(1);
@@ -126,6 +123,7 @@ int32_t main(int32_t argc, char **argv) {
             cout << "Not ready for instruction" << endl;
             currentDriveMode.mode(0);
           }
+          od4.send(currentDriveMode);
     });
 
     //: Calibrate steering

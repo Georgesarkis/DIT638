@@ -50,7 +50,14 @@ int32_t main(int32_t argc, char **argv) {
         if (sharedMemory && sharedMemory->valid()) { 
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
             
-            int mode = 0;
+            int mode;
+
+            od4.dataTrigger(2005, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
+              DriveMode currentDriveMode = cluon::extractMessage<DriveMode>(std::move(envelope));
+              mode = currentDriveMode.mode();
+            });
+
+            //int mode = 0;
             countCars ccars;
 
             ////**COUNTING CARS:**////
@@ -70,7 +77,7 @@ int32_t main(int32_t argc, char **argv) {
             float leftSensorValue = 0.0;
 
             DriveMode driveMode;
-            driveMode.directionInstruction(false);
+            driveMode.directionInstruction(false); //drivemode initially set to false because we're not ready to receive instruction
             od4.send(driveMode);
             
             std::array<bool, 3> trafficRules;
