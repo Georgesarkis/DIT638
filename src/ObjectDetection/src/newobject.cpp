@@ -12,6 +12,7 @@
 
 #include "StopSignDetection.cpp"
 #include "SignDetection.hpp"
+#include "countCars.hpp"
 
 using namespace std;
 using namespace cv;
