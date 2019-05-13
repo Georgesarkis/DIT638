@@ -29,20 +29,14 @@ int32_t main(int32_t argc, char **argv) {
     cerr << " --cid:    CID of the OD4Session to send and receive messages"<< endl;
     cerr << " --name:   name of the shared memory area to attach" << endl;
   } else {
-
-            cluon::OD4Session od4{static_cast<uint16_t>(stoi(commandlineArguments["cid"]))};
-            const uint32_t WIDTH{static_cast<uint32_t>(stoi(commandlineArguments["width"]))};
-            const uint32_t HEIGHT{static_cast<uint32_t>(stoi(commandlineArguments["height"]))};
-            const string NAME{commandlineArguments["name"]};
+        cluon::OD4Session od4{static_cast<uint16_t>(stoi(commandlineArguments["cid"]))};
+        const uint32_t WIDTH{static_cast<uint32_t>(stoi(commandlineArguments["width"]))};
+        const uint32_t HEIGHT{static_cast<uint32_t>(stoi(commandlineArguments["height"]))};
+        const string NAME{commandlineArguments["name"]};
         unique_ptr<cluon::SharedMemory> sharedMemory{new cluon::SharedMemory{NAME}};
+        
         if (sharedMemory && sharedMemory->valid()) { 
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
-
-            cluon::OD4Session od4{static_cast<uint16_t>(stoi(commandlineArguments["cid"]))};
-            const uint32_t WIDTH{static_cast<uint32_t>(stoi(commandlineArguments["width"]))};
-            const uint32_t HEIGHT{static_cast<uint32_t>(stoi(commandlineArguments["height"]))};
-            const string NAME{commandlineArguments["name"]};
-            
             
             while(od4.isRunning()){
                 Mat img;
