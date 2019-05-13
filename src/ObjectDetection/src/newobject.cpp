@@ -18,6 +18,7 @@ using namespace cv;
 
 StopSignDetection ssd;
 Mat getInterval(Mat img, string color);
+array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO);
 
 int32_t main(int32_t argc, char **argv) {
      int32_t retCode{1};
@@ -45,6 +46,7 @@ int32_t main(int32_t argc, char **argv) {
             int leftCar = 0;
             int frontCar = 0;
             int rightCar = 0;
+            countCars ccars;
 
             DriveMode driveMode;
             driveMode.directionInstruction(false);
@@ -82,7 +84,7 @@ int32_t main(int32_t argc, char **argv) {
                     //TODO add linearacceleration
                     //TODO add calibration
 
-                    trafficRules = scanForTrafficSigns(img, true, true);
+                    trafficRules = ShapeDetection(img, true, true);
                     cout << "left: " << trafficRules[0] << endl; 
                     cout << "for: " << trafficRules[1] << endl; 
                     cout << "right: " << trafficRules[2] << endl; 
@@ -92,7 +94,7 @@ int32_t main(int32_t argc, char **argv) {
                     trafficSignRules.rightAllowed(trafficRules[2]);
                     od4.send(trafficSignRules);     
 
-                    leftCar = scanForCarInLeft(greenInputImage, leftCar);
+                    leftCar = ccars.findCars(greenInputImage, 0, leftCar);
                     amountOfCars = leftCar + frontCar + rightCar;
                 } else {
                     
