@@ -47,5 +47,5 @@ RUN echo http://dl-4.alpinelinux.org/alpine/v3.8/main > /etc/apk/repositories &&
         libcanberra-gtk3
 
 WORKDIR /usr/bin
-COPY --from=builder /tmp/bin/objectDetection .
-ENTRYPOINT ["/usr/bin/objectDetection"]
+COPY --from=builder /tmp/bin/newobject .
+ENTRYPOINT ["/usr/bin/newobject"]
