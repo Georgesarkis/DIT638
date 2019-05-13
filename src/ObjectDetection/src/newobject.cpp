@@ -78,7 +78,9 @@ int32_t main(int32_t argc, char **argv) {
                 if(mode == 0){
                     ssd.run(img , true, true);
                     bool stopSignFound = ssd.Threshhold_reached;
+                    cout << "stop sign found: " << stopSignFound << endl;
                     if(!stopSignFound){ 
+                        cout << "no stop sign found" << endl;
                         driveMode.directionInstruction(false);
                         od4.send(driveMode);
                     }
@@ -86,19 +88,16 @@ int32_t main(int32_t argc, char **argv) {
                     //TODO add calibration
 
                     trafficRules = ShapeDetection(img, true, true);
-                    cout << "left: " << trafficRules[0] << endl; 
-                    cout << "for: " << trafficRules[1] << endl; 
-                    cout << "right: " << trafficRules[2] << endl; 
-
                     trafficSignRules.leftAllowed(trafficRules[0]);
                     trafficSignRules.forwardAllowed(trafficRules[1]);
                     trafficSignRules.rightAllowed(trafficRules[2]);
                     od4.send(trafficSignRules);     
 
                     leftCar = ccars.findCars(greenInputImage, 0, leftCar);
+                    cout << "leftCar: " << leftCar << endl;
                     amountOfCars = leftCar + frontCar + rightCar;
                 } else {
-                    
+                    cout << "MODE 2" << endl;
                 }
 
             }
