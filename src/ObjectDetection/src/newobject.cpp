@@ -38,6 +38,23 @@ int32_t main(int32_t argc, char **argv) {
         if (sharedMemory && sharedMemory->valid()) { 
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
             
+            int mode = 0;
+
+            driveMode.directionInstruction(false);
+            od4.send(driveMode);
+
+            od4.dataTrigger(2005, [&od4](cluon::data::Envelope &&envelope) {
+                DriveMode currentDriveMode =
+                    cluon::extractMessage<DriveMode>(std::move(envelope));
+                mode = driveMode.mode();
+                cout << "mode: " << mode << endl;
+            }
+
+
+          
+
+
+
             while(od4.isRunning()){
                 Mat img;
                 sharedMemory->wait();
@@ -50,10 +67,20 @@ int32_t main(int32_t argc, char **argv) {
 
                 ssd.run(img , true, true);
                 bool stopSignFound = ssd.Threshhold_reached;
+                if(!stopSignFound){ 
+                    driveMode.directionInstruction(false);
+                    od4.send(driveMode);
+                }
 
-                string banana = stopSignFound ? "true" : "false";
+                trafficRules = scanForTrafficSigns(img, VERBOSE, VIDEO);
+                cout << "left: " << trafficRules[0] << endl; 
+                cout << "for: " << trafficRules[1] << endl; 
+                cout << "right: " << trafficRules[2] << endl; 
 
-                cout << "STUFF: " << banana << endl;
+                trafficSignRules.leftAllowed(trafficRules[0]);
+                trafficSignRules.forwardAllowed(trafficRules[1]);
+                trafficSignRules.rightAllowed(trafficRules[2]);
+                od4.send(trafficSignRules);
             }
         }
     }
