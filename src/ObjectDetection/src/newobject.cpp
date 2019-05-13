@@ -92,20 +92,22 @@ int32_t main(int32_t argc, char **argv) {
                 if(mode == 0){
                     ssd.run(img , VERBOSE, VIDEO);
                     bool stopSignFound = ssd.Threshhold_reached;
+                    trafficRules = ShapeDetection(img, VERBOSE, VIDEO);
+
                     if(stopSignFound){ 
                         cout << "at stop sign" << endl;
-                        mode = 1; //TODO delete this after the od4 is tested
                         driveMode.atStopSign(true);
                         od4.send(driveMode);
+
+                        trafficSignRules.leftAllowed(trafficRules[0]);
+                        trafficSignRules.forwardAllowed(trafficRules[1]);
+                        trafficSignRules.rightAllowed(trafficRules[2]);
+                        od4.send(trafficSignRules); 
+                                              
+                        mode = 1; //TODO delete this after the od4 is tested
                     }
                     //TODO add linearacceleration
                     //TODO add calibration
-
-                    trafficRules = ShapeDetection(img, VERBOSE, VIDEO);
-                    trafficSignRules.leftAllowed(trafficRules[0]);
-                    trafficSignRules.forwardAllowed(trafficRules[1]);
-                    trafficSignRules.rightAllowed(trafficRules[2]);
-                    od4.send(trafficSignRules);     
 
                     leftCar = ccars.findCars(greenInputImage, 0, leftCar);
                     cout << "leftCar: " << leftCar << endl;
