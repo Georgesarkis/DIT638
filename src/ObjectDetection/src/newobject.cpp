@@ -11,6 +11,7 @@
 #include <array>
 
 #include "StopSignDetection.cpp"
+#include "SignDetection.hpp"
 
 using namespace std;
 using namespace cv;
@@ -49,11 +50,9 @@ int32_t main(int32_t argc, char **argv) {
                 mode = driveMode.mode();
                 cout << "mode: " << mode << endl;
             }
-
-
-          
-
-
+            
+            std::array<bool, 3> trafficRules;
+            TrafficRules trafficSignRules;
 
             while(od4.isRunning()){
                 Mat img;
