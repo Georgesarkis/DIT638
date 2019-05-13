@@ -44,7 +44,9 @@ int32_t main(int32_t argc, char **argv) {
         const uint32_t HEIGHT{static_cast<uint32_t>(stoi(commandlineArguments["height"]))};
         const string NAME{commandlineArguments["name"]};
         unique_ptr<cluon::SharedMemory> sharedMemory{new cluon::SharedMemory{NAME}};
-        
+        const bool VERBOSE{commandlineArguments.count("verbose") != 0};
+        const bool VIDEO{commandlineArguments.count("video") != 0};
+
         if (sharedMemory && sharedMemory->valid()) { 
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
             
@@ -88,7 +90,7 @@ int32_t main(int32_t argc, char **argv) {
                 Mat blackInputImage = getInterval(img, "black");
 
                 if(mode == 0){
-                    ssd.run(img , true, true);
+                    ssd.run(img , VERBOSE, VIDEO);
                     bool stopSignFound = ssd.Threshhold_reached;
                     if(stopSignFound){ 
                         cout << "at stop sign" << endl;
@@ -99,7 +101,7 @@ int32_t main(int32_t argc, char **argv) {
                     //TODO add linearacceleration
                     //TODO add calibration
 
-                    trafficRules = ShapeDetection(img, true, true);
+                    trafficRules = ShapeDetection(img, VERBOSE, VIDEO);
                     trafficSignRules.leftAllowed(trafficRules[0]);
                     trafficSignRules.forwardAllowed(trafficRules[1]);
                     trafficSignRules.rightAllowed(trafficRules[2]);
