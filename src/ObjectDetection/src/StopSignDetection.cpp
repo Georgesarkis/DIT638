@@ -49,10 +49,16 @@ public:
 };
 
 void StopSignDetection::run(Mat image, bool verbose, bool VIDEO) {
-
   VERBOSE = verbose;
+  Mat img;
+  Rect myROI(0,0,image.size().width , image.size().height * 3/4);
+  Mat croppedIamge = image(myROI);
+  
+  Rect myROI1(croppedIamge.size().width,0,croppedIamge.size().width /2 , image.size().height );
+  Mat croppedIamge1 = image(myROI1);
+  cvtColor(croppedIamge1 ,img , COLOR_BGR2GRAY );
 
-  area = getBiggestOctagon(image);
+  area = getBiggestOctagon(img);
 
   if (STOPSIGN_FOUND) {
     followStopsign();
@@ -61,7 +67,7 @@ void StopSignDetection::run(Mat image, bool verbose, bool VIDEO) {
   }
 
   if (VIDEO) {
-    Mat drawing = image.clone();
+    Mat drawing = img.clone();
 
     Point pt = getCenter(current_contour);
 
