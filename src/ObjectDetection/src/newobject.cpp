@@ -75,6 +75,7 @@ int32_t main(int32_t argc, char **argv) {
             
             std::array<bool, 3> trafficRules;
             TrafficRules trafficSignRules;
+            opendlv::proxy::PedalPositionRequest pedalReq;
 
             while(od4.isRunning()){
                 Mat img;
@@ -90,11 +91,12 @@ int32_t main(int32_t argc, char **argv) {
                 Mat blackInputImage = getInterval(img, "black");
 
                 if(mode == 0){
+                    pedalReq.position(0.13f);
+                    od4.send(pedalReq);
                     ssd.run(img , VERBOSE, VIDEO);
-                    bool stopSignFound = ssd.Threshhold_reached;
                     trafficRules = ShapeDetection(img, VERBOSE, VIDEO);
 
-                    if(stopSignFound){ 
+                    if(ssd.Threshhold_reached){ 
                         cout << "at stop sign" << endl;
                         driveMode.atStopSign(true);
                         od4.send(driveMode);
@@ -110,9 +112,10 @@ int32_t main(int32_t argc, char **argv) {
                     //TODO add calibration
 
                     leftCar = ccars.findCars(greenInputImage, 0, leftCar);
-                    cout << "leftCar: " << leftCar << endl;
                     amountOfCars = leftCar + frontCar + rightCar;
                 } else {
+                    pedalReq.position(0f);
+                    od4.send(pedalReq);
                     bool runOnce = true;
                     if(runOnce){
                         frontCar = ccars.findCars(greenInputImage, 1, frontCar);
