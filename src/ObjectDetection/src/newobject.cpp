@@ -70,13 +70,6 @@ int32_t main(int32_t argc, char **argv) {
             DriveMode driveMode;
             driveMode.directionInstruction(false);
             od4.send(driveMode);
-
-            od4.dataTrigger(2005, [&od4, &mode, &driveMode](cluon::data::Envelope &&envelope) {
-                DriveMode currentDriveMode =
-                    cluon::extractMessage<DriveMode>(std::move(envelope));
-                mode = driveMode.mode();
-                cout << "mode: " << mode << endl;
-            });
             
             std::array<bool, 3> trafficRules;
             TrafficRules trafficSignRules;
@@ -136,25 +129,20 @@ int32_t main(int32_t argc, char **argv) {
                         if (senderStamp == 0) {
                             frontSensorValue = getSensorData(msg.distance(), 0, frontTotalSum, frontCounter,gotNewDataFromLeft, falseCounter);
                         } else if (senderStamp == 1) {
-                            leftSensorValue =
-                                getSensorData(msg.distance(), 1, leftTotalSum, leftCounter,gotNewDataFromLeft, falseCounter);
-                        }
-                        }};
-                        od4.dataTrigger(opendlv::proxy::DistanceReading::ID(),
-                                        onDistanceReading);
+                            leftSensorValue = getSensorData(msg.distance(), 1, leftTotalSum, leftCounter,gotNewDataFromLeft, falseCounter);
+                        }}};
+                        od4.dataTrigger(opendlv::proxy::DistanceReading::ID(),onDistanceReading);
                         //  **Credit: --->this code is based on example_control code, end*
 
                         // count how many cars pass by and remove from frontCounter
-                        amountOfCars = scanForPassingCars(frontSensorValue, amountOfCars, 0, blackInputImage);
-
+                        amountOfCars = ccars.countPassingCars(frontSensorValue, amountOfCars, 0, blackInputImage);
                         if (!gotNewDataFromLeft) {
-                        falseCounter++;
+                            falseCounter++;
                         }
                         if (falseCounter >= 5) { // needed for the left sensor
-                        amountOfCars =
-                            scanForPassingCars(0, amountOfCars, 1, blackInputImage);
+                            amountOfCars = ccars.countPassingCars(0, amountOfCars, 1, blackInputImage);
                         } else {
-                        amountOfCars = scanForPassingCars(leftSensorValue, amountOfCars,1, blackInputImage);
+                            amountOfCars = ccars.countPassingCars(leftSensorValue, amountOfCars, 1, blackInputImage);
                         }
                     }
 
@@ -167,14 +155,10 @@ int32_t main(int32_t argc, char **argv) {
 }
 
 
-
-Mat getInterval(Mat img, string color)
-{
+Mat getInterval(Mat img, string color){
   Mat hsvImg;
-
   cvtColor(img, hsvImg, COLOR_BGR2HSV);
   Mat intervalOutput;
-
   if (color == "black"){ //black
     inRange(hsvImg, Scalar(0, 0, 0), Scalar(180, 255, 30), intervalOutput);
   }
@@ -188,9 +172,7 @@ Mat getInterval(Mat img, string color)
 }
 
 float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &counter, bool &gotNewDataFromLeft, int &falseCounter) {
-
   float avg;
-
   if (sendStamp == 0) { // front sensor
     float frontValue = distanceMessage;
     if (counter < MAXCOUNT) {
