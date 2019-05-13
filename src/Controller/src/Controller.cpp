@@ -111,7 +111,13 @@ int32_t main(int32_t argc, char **argv) {
     od4.dataTrigger(2005, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
       DriveMode currentDriveMode =
           cluon::extractMessage<DriveMode>(std::move(envelope));
-          directionInstructionMode = currentDriveMode.directionInstruction();
+          bool stopSignFound = currentDriveMode.directionInstruction();
+
+          if(!stopSignFound){
+            currentDriveMode.mode(1);
+          } else {
+            currentDriveMode.mode(0);
+          }
     });
 
     //: Calibrate steering

@@ -170,6 +170,12 @@ int32_t main(int32_t argc, char **argv) {
         // commonly used images, like the croped image
         imgProc.setImage(img);
 
+        od4.dataTrigger(2005, [&od4](cluon::data::Envelope &&envelope) {
+          DriveMode currentDriveMode =
+            cluon::extractMessage<DriveMode>(std::move(envelope));
+          mode = driveMode.mode();
+        }
+
         switch (mode) {
         case 0:
           stopSignFound =
@@ -194,6 +200,9 @@ int32_t main(int32_t argc, char **argv) {
           trafficSignRules.forwardAllowed(trafficRules[1]);
           trafficSignRules.rightAllowed(trafficRules[2]);
           od4.send(trafficSignRules);
+
+          driveMode.directionInstruction(stopSignMode);
+          od4.send(driveMode);
 
           // CALCULATE CARS:
           amountOfCars = leftCar + frontCar + rightCar;
