@@ -20,6 +20,12 @@ using namespace cv;
 StopSignDetection ssd;
 Mat getInterval(Mat img, string color);
 array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO);
+float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &counter, bool &gotNewDataFromLeft, int &falseCounter);
+
+// GET ULTRASONIC/IR-SENSOR VALUES:
+const int MAXCOUNT = 3;
+float frontSensorData[MAXCOUNT];
+float leftSensorData[MAXCOUNT];
 
 int32_t main(int32_t argc, char **argv) {
      int32_t retCode{1};
@@ -43,11 +49,23 @@ int32_t main(int32_t argc, char **argv) {
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
             
             int mode = 0;
-            int amountOfCars = 0;
+            countCars ccars;
+
+            ////**COUNTING CARS:**////
+            int amountOfCars = 0; // should be 0, only 3 for testing count passing cars
             int leftCar = 0;
             int frontCar = 0;
             int rightCar = 0;
-            countCars ccars;
+            // ultrasonic:
+            bool gotNewDataFromLeft;
+            int falseCounter = 0;
+            // float average = 0;
+            float frontTotalSum = 0;
+            float leftTotalSum = 0;
+            int frontCounter = 0;
+            int leftCounter = 0;
+            float frontSensorValue = 0.0;
+            float leftSensorValue = 0.0;
 
             DriveMode driveMode;
             driveMode.directionInstruction(false);
@@ -74,13 +92,14 @@ int32_t main(int32_t argc, char **argv) {
                 sharedMemory->unlock();
 
                 Mat greenInputImage = getInterval(img, "green");
+                Mat blackInputImage = getInterval(img, "black");
 
                 if(mode == 0){
                     ssd.run(img , true, true);
                     bool stopSignFound = ssd.Threshhold_reached;
-                    cout << "stop sign found: " << stopSignFound << endl;
-                    if(!stopSignFound){ 
-                        cout << "no stop sign found" << endl;
+                    if(stopSignFound){ 
+                        cout << "at stop sign" << endl;
+                        mode = 1; //TODO delete this after the od4 is tested
                         driveMode.directionInstruction(false);
                         od4.send(driveMode);
                     }
@@ -97,7 +116,48 @@ int32_t main(int32_t argc, char **argv) {
                     cout << "leftCar: " << leftCar << endl;
                     amountOfCars = leftCar + frontCar + rightCar;
                 } else {
-                    cout << "MODE 2" << endl;
+                    bool runOnce = true;
+                    if(runOnce){
+                        frontCar = ccars.findCars(greenInputImage, 1, frontCar);
+                        rightCar = ccars.findCars(greenInputImage, 2, rightCar);
+                        runOnce = false;
+                    }
+                    if (amountOfCars == 0) {
+                        driveMode.directionInstruction(true);
+                        od4.send(driveMode);
+                    } else {
+                        auto onDistanceReading{[VERBOSE, &od4, &gotNewDataFromLeft,&leftSensorValue, &frontSensorValue,
+                                    &frontTotalSum, &frontCounter, &leftCounter,&leftTotalSum, &falseCounter](cluon::data::Envelope &&envelope) {
+                        auto msg = cluon::extractMessage<opendlv::proxy::DistanceReading>(std::move(envelope));
+                        const uint16_t senderStamp = envelope.senderStamp(); // Local variables are not available
+
+                        gotNewDataFromLeft = false;
+
+                        if (senderStamp == 0) {
+                            frontSensorValue = getSensorData(msg.distance(), 0, frontTotalSum, frontCounter,gotNewDataFromLeft, falseCounter);
+                        } else if (senderStamp == 1) {
+                            leftSensorValue =
+                                getSensorData(msg.distance(), 1, leftTotalSum, leftCounter,gotNewDataFromLeft, falseCounter);
+                        }
+                        }};
+                        od4.dataTrigger(opendlv::proxy::DistanceReading::ID(),
+                                        onDistanceReading);
+                        //  **Credit: --->this code is based on example_control code, end*
+
+                        // count how many cars pass by and remove from frontCounter
+                        amountOfCars = scanForPassingCars(frontSensorValue, amountOfCars, 0, blackInputImage);
+
+                        if (!gotNewDataFromLeft) {
+                        falseCounter++;
+                        }
+                        if (falseCounter >= 5) { // needed for the left sensor
+                        amountOfCars =
+                            scanForPassingCars(0, amountOfCars, 1, blackInputImage);
+                        } else {
+                        amountOfCars = scanForPassingCars(leftSensorValue, amountOfCars,1, blackInputImage);
+                        }
+                    }
+
                 }
 
             }
@@ -115,17 +175,56 @@ Mat getInterval(Mat img, string color)
   cvtColor(img, hsvImg, COLOR_BGR2HSV);
   Mat intervalOutput;
 
-  if (color == "black")
-  { //black
+  if (color == "black"){ //black
     inRange(hsvImg, Scalar(0, 0, 0), Scalar(180, 255, 30), intervalOutput);
   }
-  if (color == "orange")
-  { //orange
+  if (color == "orange"){ //orange
     inRange(hsvImg, Scalar(2, 130, 154), Scalar(23, 166, 255), intervalOutput);
   }
-  else if (color == "green")
-  { //green
+  else if (color == "green"){ //green
     inRange(hsvImg, Scalar(30, 80, 125), Scalar(55, 255, 255), intervalOutput);
   }
   return intervalOutput;
+}
+
+float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &counter, bool &gotNewDataFromLeft, int &falseCounter) {
+
+  float avg;
+
+  if (sendStamp == 0) { // front sensor
+    float frontValue = distanceMessage;
+    if (counter < MAXCOUNT) {
+      frontSensorData[counter] = distanceMessage;
+      counter++;
+    } else {
+      for (int i = 0; i < MAXCOUNT; i++) {
+        totalSum += frontSensorData[i];
+      }
+      avg = totalSum / MAXCOUNT;
+      frontValue = avg;
+      counter = 0;
+      totalSum = 0;
+    }
+    return frontValue;
+  }
+
+  if (sendStamp == 1) { // left sensor
+    float leftValue = distanceMessage;
+    gotNewDataFromLeft = true;
+    falseCounter = 0;
+    if (counter < MAXCOUNT) {
+      leftSensorData[counter] = distanceMessage;
+      counter++;
+    } else {
+      for (int i = 0; i < MAXCOUNT; i++) {
+        totalSum += leftSensorData[i];
+      }
+      avg = totalSum / MAXCOUNT;
+      leftValue = avg;
+      counter = 0;
+      totalSum = 0;
+    }
+    return leftValue;
+  }
+  return -1;
 }

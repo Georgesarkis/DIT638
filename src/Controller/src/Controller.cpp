@@ -112,10 +112,12 @@ int32_t main(int32_t argc, char **argv) {
       DriveMode currentDriveMode =
           cluon::extractMessage<DriveMode>(std::move(envelope));
           bool stopSignFound = currentDriveMode.directionInstruction();
-
+          cout << "STOP SIGN TRIGGER" << endl;
           if(!stopSignFound){
+            cout << "AT STOP SIGN" << endl;
             currentDriveMode.mode(1);
           } else {
+            cout << "SEEING STOP SIGN" << endl;
             currentDriveMode.mode(0);
           }
     });
