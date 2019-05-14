@@ -46,31 +46,38 @@ public:
 };
 
 void StopSignDetection::run(const Mat &image, bool VERBOSE, bool VIDEO , int size) {
-
+  cout << "RUNNING SSD" << endl;
   // Setup a rectangle to define your region of interest
   Rect myROI1(0, 0, image.size().width, image.size().height * 3 / 4);
   // Crop the full image to that image contained by the rectangle myROI
   Mat croppedImage1 = image(myROI1);
 
-  Rect myROI2(croppedImage1.size().width / 2, 0, croppedImage1.size().width / 2,
-              croppedImage1.size().height);
+  Rect myROI2(croppedImage1.size().width / 2, 0, croppedImage1.size().width / 2,croppedImage1.size().height);
   Mat croppedImage2 = image(myROI2);
+
+  cout << "cut the image for stop sign" << endl;
 
   Mat img;
   cvtColor(croppedImage2, img, COLOR_BGR2GRAY);
-
+  
+  cout << "get the gray image" << endl;
+  
   getBiggestOctagon(img , size);
   //area = getArea(contour);
 
+  cout << "after calling funcation get biggest octagon" << endl;
   if (VERBOSE) {
     //cout << "Current Octagon area :" << area << endl;
   }
 
   if (STOPSIGN_FOUND) {
+    cout << "STOP SIGN FOUND" << endl;
     followStopsign();
+    cout << "after calling funcatrionfollowstopsign();" << endl;
   } /*else {
   //  lookForStopSign();
   }*/
+  cout << "NO STOP SIGN SEEN" << endl;
 
   // Display image
   if (VIDEO) {
@@ -117,7 +124,7 @@ double StopSignDetection::getArea(const vector<Point> &input) {
 //: Looks for the stop sign
 void StopSignDetection::lookForStopSign() {
   if (area > minStopSignArea) {
-    cout << "----- Found a stopsign! - Starting to follow it ------";
+    cout << "----- Found a stopsign! - Starting to follow it ------" << endl;
     STOPSIGN_FOUND = true;
   }
 }
@@ -180,17 +187,21 @@ vector<Point> StopSignDetection::getBiggestOctagon(const Mat &image , int size) 
 
   blur(image, blured_image, Size(3, 3));
   Canny(blured_image, blured_image, 80, 240, 3);
-
+  cout << "after blue and canny" << endl;
   vector<vector<Point>> contours;
   findContours(blured_image, contours, CV_RETR_EXTERNAL,
                CV_CHAIN_APPROX_SIMPLE);
-
+  
+  cout << "after finding contours" << endl;
+  
   double biggest;
   vector<Point> bigC;
 
   string shape;
   vector<Point> approx;
-
+  
+  cout << "before for loop ye" << endl;
+  
   for (size_t i = 0; i < contours.size(); i++) {
     approxPolyDP(Mat(contours[i]), approx,arcLength(Mat(contours[i]), true) * 0.02, true);
     if (fabs(contourArea(contours[i])) < 100 || !isContourConvex(approx))
@@ -198,10 +209,14 @@ vector<Point> StopSignDetection::getBiggestOctagon(const Mat &image , int size) 
     if(approx.size() == 8){
       Rect br = boundingRect(contours[i]);
       Mat fullStopSign(image, br);
+      cout << "after fullStopSign" << endl;
       cvtColor(fullStopSign, fullStopSign, COLOR_BGR2HSV);
       inRange(fullStopSign, Scalar(28, 148, 101), Scalar(179, 255, 189), fullStopSign);
+      cout << "after getting the red image" << endl;
       area = CountWhitePixels(fullStopSign);
+      cout << "NR OF RED PIXELS: " << area << endl;
       if(area > size){
+        cout << "SETTING SS TO TRUE" << endl;
         STOPSIGN_FOUND = true;
         //return approx;
       }
