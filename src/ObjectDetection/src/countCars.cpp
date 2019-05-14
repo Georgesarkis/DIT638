@@ -58,10 +58,10 @@ int countCars::findCars(
     width = 260;
     height = 270;
   } else if (side == 2) { // right side roi
-    x = 400;
+    x = 385; //400
     y = 0;
-    width = 233;
-    height = 324;
+    width = 255; //233
+    height = 324; //324
   } else {
     throw invalid_argument("no allowed side found");
   }
@@ -180,7 +180,7 @@ int countCars::countPassingCars(
   x = 0;
   y = 285;
   width = 210;
-  height = 60;
+  height = 65;
 
   foundContours = findContoursInROI(x, y, width, height, image);
 

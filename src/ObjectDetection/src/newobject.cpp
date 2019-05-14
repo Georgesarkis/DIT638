@@ -17,7 +17,7 @@
 using namespace std;
 using namespace cv;
 
-StopSignDetection ssd;
+ShapeDetector ssd;
 Mat getInterval(Mat img, string color);
 array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO);
 float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &counter, bool &gotNewDataFromLeft, int &falseCounter);
@@ -46,7 +46,7 @@ int32_t main(int32_t argc, char **argv) {
         unique_ptr<cluon::SharedMemory> sharedMemory{new cluon::SharedMemory{NAME}};
         const bool VERBOSE{commandlineArguments.count("verbose") != 0};
         const bool VIDEO{commandlineArguments.count("video") != 0};
-        const uint32_t SIZE{static_cast<uint32_t>(stoi(commandlineArguments["size"]))};
+        const uint16_t MISSEDSIGNS{static_cast<uint16_t>(stoi(commandlineArguments["missed"]))};
 
         if (sharedMemory && sharedMemory->valid()) { 
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
@@ -81,10 +81,14 @@ int32_t main(int32_t argc, char **argv) {
             TrafficRules trafficSignRules;
             opendlv::proxy::PedalPositionRequest pedalReq;
 
-                            DriveMode driveMode;
-                driveMode.directionInstruction(false); //drivemode initially set to false because we're not ready to receive instruction
-                driveMode.atStopSign(false);
-                od4.send(driveMode);
+            DriveMode driveMode;
+            driveMode.directionInstruction(false); //drivemode initially set to false because we're not ready to receive instruction
+            driveMode.atStopSign(false);
+            od4.send(driveMode);
+            bool STOPSIGN_DETECTION = true;
+
+            ssd.setMinArea(1000);
+            ssd.setNumberOfMissedSign(MISSEDSIGNS);
 
             while(od4.isRunning()){
 
@@ -101,31 +105,53 @@ int32_t main(int32_t argc, char **argv) {
                 Mat blackInputImage = getInterval(img, "black");
 
                 if(mode == 0){
-                    pedalReq.position(0.13f);
-                    od4.send(pedalReq);
-                    ssd.run(img, VERBOSE, VIDEO, SIZE);
                     trafficRules = ShapeDetection(img, VERBOSE, VIDEO);
 
-                    if(ssd.Threshhold_reached){ 
-                        cout << "at stop sign" << endl;
+                    Mat image(img);
+                    Rect myROI(0, 0, img.size().width, img.size().height * 3 / 4);
+                    Mat croppedImage = image(myROI);
 
-                        trafficSignRules.leftAllowed(trafficRules[0]);
-                        trafficSignRules.forwardAllowed(trafficRules[1]);
-                        trafficSignRules.rightAllowed(trafficRules[2]);
-                        od4.send(trafficSignRules); 
-                                              
-                        driveMode.atStopSign(true);
-                        od4.send(driveMode);
-                        //mode = 1; //TODO delete this after the od4 is tested
+                    Mat grayImg, hsvImg, frame_thresholdred, frame_thresholdgreen;
+                    cvtColor(croppedImage, grayImg, COLOR_BGR2GRAY);
+                    cvtColor(croppedImage, hsvImg, COLOR_BGR2HSV);
+
+                    if(STOPSIGN_DETECTION){
+
+                      Mat drawing = Mat::zeros(frame_thresholdred.size(), CV_8UC3);
+
+                      vector<Point> contour = ssd.getBiggestOctagon(grayImg);
+                      Point pt = ssd.getCenter(contour);
+                      double area = ssd.getArea(contour);
+
+                      if(VERBOSE){
+                        cout << "Current Octagon area :" << area << endl;
+                      }
+
+                      if(ssd.Threshhold_reached == false){
+                        ssd.setArea(area);
+                        ssd.stopSignLogic();
+                      }else{
+                          cout << "-- Exiting stopsign detection." <<  " -- Failed frames: " << ssd.failed_frames << endl;
+                          STOPSIGN_DETECTION = false;
+                          cout << "at stop sign" << endl;
+
+                          trafficSignRules.leftAllowed(trafficRules[0]);
+                          trafficSignRules.forwardAllowed(trafficRules[1]);
+                          trafficSignRules.rightAllowed(trafficRules[2]);
+                          od4.send(trafficSignRules); 
+                                                
+                          driveMode.atStopSign(true);
+                          od4.send(driveMode);
+                      }
                     }
+
                     //TODO add linearacceleration
                     //TODO add calibration
 
                     leftCar = ccars.findCars(greenInputImage, 0, leftCar);
                     amountOfCars = leftCar + frontCar + rightCar;
                 } else {
-                    pedalReq.position(0.0f);
-                    od4.send(pedalReq);
+                    cout << "IN MODE 1" << endl;
                     bool runOnce = true;
                     if(runOnce){
                         frontCar = ccars.findCars(greenInputImage, 1, frontCar);
