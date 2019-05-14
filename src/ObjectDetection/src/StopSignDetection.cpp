@@ -182,63 +182,68 @@ string StopSignDetection::detect(const vector<Point> &input) {
 }
 
 void StopSignDetection::getBiggestOctagon(const Mat &image , int size) {
-
-  Mat blured_image;
-
-  blur(image, blured_image, Size(3, 3));
-  Canny(blured_image, blured_image, 80, 240, 3);
-  cout << "after blue and canny" << endl;
-  vector<vector<Point>> contours;
-  findContours(blured_image, contours, CV_RETR_EXTERNAL,
-               CV_CHAIN_APPROX_SIMPLE);
-  
   cout << "after finding contours" << endl;
-  
-  double biggest;
-  vector<Point> bigC;
-
-  string shape;
   vector<Point> approx;
-  
   cout << "before for loop ye" << endl;
   
+  Mat hsvimg;
+  Mat intervalOutput;
+  cout << "after iniit vars" << endl;
+  cvtColor(fullStopSign, hsvimg, COLOR_BGR2HSV);
+  cout << "after cvtColor hsv" << endl;
+  inRange(hsvimg, Scalar(2, 143, 136), Scalar(7, 255, 255), intervalOutput);
+
+  cout << "after the changingcolor to red" << endl;
+
+
+  vector<vector<Point>> contours;
+  cout << "before first find contours" << endl;
+  findContours(intervalOutput, contours, RETR_TREE,CHAIN_APPROX_SIMPLE);
+
+  cout << "finding the couunt of the red color" << endl;
+
+
+  vector<vector<Point>> contoursPoly(contours.size());
+  cout << "after contours poly" << endl;
+  vector<Rect> boundRect(contours.size());
+  cout << "after init boundrect of first contours size" << endl;
+
   for (size_t i = 0; i < contours.size(); i++) {
-    approxPolyDP(Mat(contours[i]), approx,arcLength(Mat(contours[i]), true) * 0.02, true);
+    cout << "in the first for loop" << endl;
 
-    cout << "IM FABULOUS" << endl;
+    approxPolyDP(contours[i], contoursPoly[i], 3, true);
+    cout << "after approximating polys" << endl;
+    boundRect[i] = boundingRect(contoursPoly[i]);
+      cout << "after creating a rec around every red object" << endl;
 
-    if(approx.size() == 8){
-      cout << "before boundingRect"<< endl;
-      Rect br = boundingRect(contours[i]);
-      cout << "AFTER BR" << endl;
-      Mat fullStopSign(image, br);
-      cout << "after fullStopSign" << endl;
-      Mat hsvimg;
-      Mat intervalOutput;
-      cout << "after iniit vars" << endl;
-      cvtColor(fullStopSign, hsvimg, COLOR_BGR2HSV);
-      cout << "after cvtColor hsv" << endl;
-      inRange(hsvimg, Scalar(2, 143, 136), Scalar(7, 255, 255), intervalOutput);
-      
-      cout << "after getting the red image" << endl;
-      area = CountWhitePixels(fullStopSign);
-      cout << "NR OF RED PIXELS: " << area << endl;
-      if(area > size){
-        cout << "SETTING SS TO TRUE" << endl;
-        STOPSIGN_FOUND = true;
-        //return approx;
+    if (contourArea(contours[i]) > size) {
+      cout << "found red big enough to check shapes for" << endl;
+      Mat fullStopSign(image, boundRect[i]);
+     cout << "cuting the image base on the rect" << endl;
+
+      Mat blured_image;
+
+      blur(fullStopSign, blured_image, Size(3, 3));
+      cout << "BLURRED IMAGE" << endl;
+      Canny(blured_image, blured_image, 80, 240, 3);
+      cout << "after canny whatever the hell that does" << endl;
+
+      vector<vector<Point>> contours1;
+      findContours(blured_image, contours1, CV_RETR_EXTERNAL,CV_CHAIN_APPROX_SIMPLE);
+        cout << "finding contours1 from the cutten image" << endl;
+
+      for (size_t i = 0; i < contours1.size(); i++) {
+        cout << "in second for loop" << endl;
+        approxPolyDP(Mat(contours1[i]), approx,arcLength(Mat(contours1[i]), true) * 0.02, true);
+        cout << "IM FABULOUS" << endl;
+        
+        if(approx.size() == 8){
+          cout << "found octagone in the red shae cutten image" << endl;
+          STOPSIGN_FOUND = true;
+        }
       }
     }
-/*
-    shape = detect(approx);
-    size = getArea(approx);
-    if ((shape == "octagon") && (size > biggest)) {
-      biggest = size;
-      bigC = approx;
-    }
-    */
   }
-  //return null;
 }
 
 int StopSignDetection::CountWhitePixels(Mat img) {
