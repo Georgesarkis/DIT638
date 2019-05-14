@@ -110,6 +110,7 @@ int32_t main(int32_t argc, char **argv) {
       od4.send(pedalReq);
     });
 
+     bool runOnce = false;
 
     //: Setting the drive-mode
     od4.dataTrigger(2005, [&od4, &directionInstructionMode, &pedalReq, &SPEED](cluon::data::Envelope &&envelope) {
@@ -119,7 +120,10 @@ int32_t main(int32_t argc, char **argv) {
           directionInstructionMode = currentDriveMode.directionInstruction();
           if(atStopSign){
             cout << "ready for instruction" << endl;
-            pedalReq.position(0.0f);
+            if(!runOnce){
+              pedalReq.position(0.0f);
+              runOnce = true;
+            }
             currentDriveMode.mode(1);
           } else {
             cout << "Not ready for instruction" << endl;
