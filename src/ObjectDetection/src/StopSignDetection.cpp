@@ -213,8 +213,13 @@ void StopSignDetection::getBiggestOctagon(const Mat &image , int size) {
       cout << "AFTER BR" << endl;
       Mat fullStopSign(image, br);
       cout << "after fullStopSign" << endl;
-      cvtColor(fullStopSign, fullStopSign, COLOR_BGR2HSV);
-      inRange(fullStopSign, Scalar(28, 148, 101), Scalar(179, 255, 189), fullStopSign);
+      Mat hsvimg;
+      Mat intervalOutput;
+      cout << "after iniit vars" << endl;
+      cvtColor(fullStopSign, hsvimg, COLOR_BGR2HSV);
+      cout << "after cvtColor hsv" << endl;
+      inRange(hsvimg, Scalar(2, 143, 136), Scalar(7, 255, 255), intervalOutput);
+      
       cout << "after getting the red image" << endl;
       area = CountWhitePixels(fullStopSign);
       cout << "NR OF RED PIXELS: " << area << endl;
