@@ -189,7 +189,7 @@ void StopSignDetection::getBiggestOctagon(const Mat &image , int size) {
   Mat hsvimg;
   Mat intervalOutput;
   cout << "after iniit vars" << endl;
-  cvtColor(fullStopSign, hsvimg, COLOR_BGR2HSV);
+  cvtColor(image, hsvimg, COLOR_BGR2HSV);
   cout << "after cvtColor hsv" << endl;
   inRange(hsvimg, Scalar(2, 143, 136), Scalar(7, 255, 255), intervalOutput);
 
