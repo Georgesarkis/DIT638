@@ -19,8 +19,8 @@ int32_t main(int32_t argc, char **argv) {
             "messages"
          << endl;
   } else {
-    const uint16_t CID{
-        static_cast<uint16_t>(stoi(commandlineArguments["cid"]))};
+    const uint16_t CID{static_cast<uint16_t>(stoi(commandlineArguments["cid"]))};
+    const float SPEED{static_cast<float>(stof(commandlineArguments["speed"]))};
 
     cluon::OD4Session od4{CID};
 
@@ -110,20 +110,27 @@ int32_t main(int32_t argc, char **argv) {
       od4.send(pedalReq);
     });
 
+     bool runOnce = false;
 
     //: Setting the drive-mode
-    od4.dataTrigger(2005, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
+    od4.dataTrigger(2005, [&od4, &directionInstructionMode, &pedalReq, &SPEED](cluon::data::Envelope &&envelope) {
       DriveMode currentDriveMode =
           cluon::extractMessage<DriveMode>(std::move(envelope));
           bool atStopSign = currentDriveMode.atStopSign(); //e.g at stop sign
           directionInstructionMode = currentDriveMode.directionInstruction();
           if(atStopSign){
             cout << "ready for instruction" << endl;
+            if(!runOnce){
+              pedalReq.position(0.0f);
+              runOnce = true;
+            }
             currentDriveMode.mode(1);
           } else {
             cout << "Not ready for instruction" << endl;
+            pedalReq.position(SPEED);
             currentDriveMode.mode(0);
           }
+          od4.send(pedalReq);
           od4.send(currentDriveMode);
     });
 
