@@ -26,7 +26,7 @@ class StopSignDetection {
   bool STOPSIGN_FOUND = false;
   double area = 0;
   int CountWhitePixels(Mat img);
-  vector<Point> getBiggestOctagon(const Mat &image , int size);
+  void getBiggestOctagon(const Mat &image , int size);
   string detect(const vector<Point> &input);
   void followStopsign();
   void lookForStopSign();
