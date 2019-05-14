@@ -56,13 +56,8 @@ void StopSignDetection::run(const Mat &image, bool VERBOSE, bool VIDEO , int siz
   Mat croppedImage2 = image(myROI2);
 
   cout << "cut the image for stop sign" << endl;
-
-  Mat img;
-  cvtColor(croppedImage2, img, COLOR_BGR2GRAY);
   
-  cout << "get the gray image" << endl;
-  
-  getBiggestOctagon(img , size);
+  getBiggestOctagon(croppedImage2 , size);
   //area = getArea(contour);
 
   cout << "after calling funcation get biggest octagon" << endl;
@@ -219,9 +214,16 @@ void StopSignDetection::getBiggestOctagon(const Mat &image , int size) {
     if (contourArea(contours[i]) > size) {
       cout << "found red big enough to check shapes for" << endl;
       Mat fullStopSign(image, boundRect[i]);
-     cout << "cuting the image base on the rect" << endl;
+      cout << "cuting the image base on the rect" << endl;
+
+      cvtColor(fullStopSign, fullStopSign, COLOR_BGR2GRAY);
+    
+      cout << "convert image to gray" << endl;
 
       Mat blured_image;
+      
+      imshow("fullStopSign" , fullStopSign);
+      imshow("orginal img" , image);
 
       blur(fullStopSign, blured_image, Size(3, 3));
       cout << "BLURRED IMAGE" << endl;
