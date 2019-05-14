@@ -181,7 +181,7 @@ string StopSignDetection::detect(const vector<Point> &input) {
   return shape;
 }
 
-vector<Point> StopSignDetection::getBiggestOctagon(const Mat &image , int size) {
+void StopSignDetection::getBiggestOctagon(const Mat &image , int size) {
 
   Mat blured_image;
 
@@ -204,12 +204,11 @@ vector<Point> StopSignDetection::getBiggestOctagon(const Mat &image , int size) 
   
   for (size_t i = 0; i < contours.size(); i++) {
     approxPolyDP(Mat(contours[i]), approx,arcLength(Mat(contours[i]), true) * 0.02, true);
-    cout << "before if"<< endl;
-    if (fabs(contourArea(contours[i])) < 100 || !isContourConvex(approx))
-      cout << "IM FABULOUS" << endl;
-      continue;
+
+    cout << "IM FABULOUS" << endl;
+
     if(approx.size() == 8){
-    cout << "before boundingRect"<< endl;
+      cout << "before boundingRect"<< endl;
       Rect br = boundingRect(contours[i]);
       cout << "AFTER BR" << endl;
       Mat fullStopSign(image, br);
