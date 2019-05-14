@@ -82,8 +82,11 @@ int32_t main(int32_t argc, char **argv) {
             opendlv::proxy::PedalPositionRequest pedalReq;
 
             DriveMode driveMode;
-            driveMode.directionInstruction(false); //drivemode initially set to false because we're not ready to receive instruction
+            InstructionMode instructionMode;
+            instructionMode.directionAllowed(false);
+            //driveMode.directionInstruction(false); //drivemode initially set to false because we're not ready to receive instruction
             driveMode.atStopSign(false);
+            od4.send(instructionMode);
             od4.send(driveMode);
             bool STOPSIGN_DETECTION = true;
 
@@ -151,7 +154,6 @@ int32_t main(int32_t argc, char **argv) {
                     leftCar = ccars.findCars(greenInputImage, 0, leftCar);
                     amountOfCars = leftCar + frontCar + rightCar;
                 } else {
-                    cout << "IN MODE 1" << endl;
                     bool runOnce = true;
                     if(runOnce){
                         frontCar = ccars.findCars(greenInputImage, 1, frontCar);
@@ -159,8 +161,8 @@ int32_t main(int32_t argc, char **argv) {
                         runOnce = false;
                     }
                     if (amountOfCars == 0) {
-                        driveMode.directionInstruction(true);
-                        od4.send(driveMode);
+                        instructionMode.directionAllowed(false);
+                        od4.send(instructionMode);
                     } else {
                         auto onDistanceReading{
                             [&od4, &gotNewDataFromLeft,&leftSensorValue, &frontSensorValue,&frontTotalSum, &frontCounter, &leftCounter,&leftTotalSum, &falseCounter](cluon::data::Envelope &&envelope) {
