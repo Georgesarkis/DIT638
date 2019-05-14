@@ -27,7 +27,7 @@ int32_t main(int32_t argc, char **argv) {
     opendlv::proxy::PedalPositionRequest pedalReq;
     opendlv::proxy::GroundSteeringReading steerReq;
     bool TurnLeft, TurnRight, GoForward;
-    bool directionInstructionMode;
+    bool directionInstructionMode = false;
 
     //: recive trafic sign rules.
     od4.dataTrigger(2003, [&TurnLeft, &TurnRight, &GoForward](cluon::data::Envelope &&envelope) {
@@ -110,22 +110,25 @@ int32_t main(int32_t argc, char **argv) {
       od4.send(pedalReq);
     });
 
-     bool runOnce = false;
+     //bool runOnce = false;
+     bool afterStopSign = false;
 
     //: Setting the drive-mode
-    od4.dataTrigger(2005, [&od4, &directionInstructionMode, &pedalReq, &SPEED](cluon::data::Envelope &&envelope) {
-      DriveMode currentDriveMode =
-          cluon::extractMessage<DriveMode>(std::move(envelope));
+    od4.dataTrigger(2005, [&od4, &pedalReq, &SPEED, &afterStopSign](cluon::data::Envelope &&envelope) {
+      DriveMode currentDriveMode = cluon::extractMessage<DriveMode>(std::move(envelope));
           bool atStopSign = currentDriveMode.atStopSign(); //e.g at stop sign
-          directionInstructionMode = currentDriveMode.directionInstruction();
-          if(atStopSign){
+          //directionInstructionMode = currentDriveMode.directionInstruction();
+          cout << "AFTER STOP SIGN? " << afterStopSign << endl;
+          if(atStopSign && !afterStopSign){
             cout << "ready for instruction" << endl;
-            if(!runOnce){
+            pedalReq.position(0.0f);
+            /*if(!runOnce){
               pedalReq.position(0.0f);
               runOnce = true;
-            }
+            }*/
+            afterStopSign = true;
             currentDriveMode.mode(1);
-          } else {
+          } else if(!atStopSign && !afterStopSign) {
             cout << "Not ready for instruction" << endl;
             pedalReq.position(SPEED);
             currentDriveMode.mode(0);
@@ -136,14 +139,19 @@ int32_t main(int32_t argc, char **argv) {
 
     //: Calibrate steering
     od4.dataTrigger(2006, [&od4, &steerReq](cluon::data::Envelope &&envelope) {
-      CalibrateSteering calibrateSteering =
-          cluon::extractMessage<CalibrateSteering>(std::move(envelope));
+      CalibrateSteering calibrateSteering = cluon::extractMessage<CalibrateSteering>(std::move(envelope));
       if (calibrateSteering.CalibrateSteeringAngle() < 0 || calibrateSteering.CalibrateSteeringAngle() > 0) {
         steerReq.groundSteering((long)calibrateSteering.CalibrateSteeringAngle());
         od4.send(steerReq);
         std::cout << "Calibrate Steering Angle: "
                   << calibrateSteering.CalibrateSteeringAngle() << std::endl;
       }
+    });
+
+    od4.dataTrigger(2007, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
+      InstructionMode instructionMode = cluon::extractMessage<InstructionMode>(std::move(envelope));
+      directionInstructionMode = instructionMode.directionAllowed();
+      if(directionInstructionMode) cout << "INSTRUCTION ALLOWED " << endl;
     });
 
     while (od4.isRunning()) {

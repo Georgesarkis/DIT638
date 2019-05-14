@@ -154,6 +154,9 @@ int32_t main(int32_t argc, char **argv) {
                     leftCar = ccars.findCars(greenInputImage, 0, leftCar);
                     amountOfCars = leftCar + frontCar + rightCar;
                 } else {
+                  //driveMode.atStopSign(false);
+                  //od4.send(driveMode);
+
                     bool runOnce = true;
                     if(runOnce){
                         frontCar = ccars.findCars(greenInputImage, 1, frontCar);
@@ -161,7 +164,7 @@ int32_t main(int32_t argc, char **argv) {
                         runOnce = false;
                     }
                     if (amountOfCars == 0) {
-                        instructionMode.directionAllowed(false);
+                        instructionMode.directionAllowed(true);
                         od4.send(instructionMode);
                     } else {
                         auto onDistanceReading{
