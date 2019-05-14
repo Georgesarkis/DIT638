@@ -46,6 +46,7 @@ int32_t main(int32_t argc, char **argv) {
         unique_ptr<cluon::SharedMemory> sharedMemory{new cluon::SharedMemory{NAME}};
         const bool VERBOSE{commandlineArguments.count("verbose") != 0};
         const bool VIDEO{commandlineArguments.count("video") != 0};
+        const uint32_t SIZE{static_cast<uint32_t>(stoi(commandlineArguments["size"]))};
 
         if (sharedMemory && sharedMemory->valid()) { 
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
@@ -102,7 +103,7 @@ int32_t main(int32_t argc, char **argv) {
                 if(mode == 0){
                     pedalReq.position(0.13f);
                     od4.send(pedalReq);
-                    ssd.run(img , VERBOSE, VIDEO);
+                    ssd.run(img, VERBOSE, VIDEO, SIZE);
                     trafficRules = ShapeDetection(img, VERBOSE, VIDEO);
 
                     if(ssd.Threshhold_reached){ 

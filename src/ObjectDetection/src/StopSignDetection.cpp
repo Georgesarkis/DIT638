@@ -26,7 +26,7 @@ class StopSignDetection {
   bool STOPSIGN_FOUND = false;
   double area = 0;
 
-  vector<Point> getBiggestOctagon(const Mat &image);
+  vector<Point> getBiggestOctagon(const Mat &image , int size);
   string detect(const vector<Point> &input);
   void followStopsign();
   void lookForStopSign();
@@ -42,10 +42,10 @@ public:
   void setArea(double &input);
 
   void showAllShapes(const Mat &image);
-  void run(const Mat &image, bool VERBOSE, bool VIDEO);
+  void run(const Mat &image, bool VERBOSE, bool VIDEO , int size);
 };
 
-void StopSignDetection::run(const Mat &image, bool VERBOSE, bool VIDEO) {
+void StopSignDetection::run(const Mat &image, bool VERBOSE, bool VIDEO , int size) {
 
   // Setup a rectangle to define your region of interest
   Rect myROI1(0, 0, image.size().width, image.size().height * 3 / 4);
@@ -59,8 +59,8 @@ void StopSignDetection::run(const Mat &image, bool VERBOSE, bool VIDEO) {
   Mat img;
   cvtColor(croppedImage2, img, COLOR_BGR2GRAY);
 
-  vector<Point> contour = getBiggestOctagon(img);
-  area = getArea(contour);
+  getBiggestOctagon(img , size);
+  //area = getArea(contour);
 
   if (VERBOSE) {
     //cout << "Current Octagon area :" << area << endl;
@@ -68,12 +68,13 @@ void StopSignDetection::run(const Mat &image, bool VERBOSE, bool VIDEO) {
 
   if (STOPSIGN_FOUND) {
     followStopsign();
-  } else {
-    lookForStopSign();
-  }
+  } /*else {
+  //  lookForStopSign();
+  }*/
 
   // Display image
   if (VIDEO) {
+    /*
     Mat drawing = img.clone();
     if (area >= minStopSignArea) {
       Point pt = getCenter(contour);
@@ -83,7 +84,8 @@ void StopSignDetection::run(const Mat &image, bool VERBOSE, bool VIDEO) {
       Scalar color = Scalar(0, 0, 255);
       polylines(drawing, contour, true, color, 1, 8);
     }
-    imshow("StopSignDetection Vision", drawing);
+    */
+    imshow("StopSignDetection Vision", img);
     waitKey(1);
   }
 }
@@ -172,7 +174,7 @@ string StopSignDetection::detect(const vector<Point> &input) {
   return shape;
 }
 
-vector<Point> StopSignDetection::getBiggestOctagon(const Mat &image) {
+vector<Point> StopSignDetection::getBiggestOctagon(const Mat &image , int size) {
 
   Mat blured_image;
 
@@ -191,17 +193,36 @@ vector<Point> StopSignDetection::getBiggestOctagon(const Mat &image) {
   vector<Point> approx;
 
   for (size_t i = 0; i < contours.size(); i++) {
-    approxPolyDP(Mat(contours[i]), approx,
-                 arcLength(Mat(contours[i]), true) * 0.02, true);
-
+    approxPolyDP(Mat(contours[i]), approx,arcLength(Mat(contours[i]), true) * 0.02, true);
+    if (fabs(contourArea(contours[i])) < 100 || !isContourConvex(approx))
+      continue;
+    if(approx.size() == 8){
+      Rect br = boundingRect(contours2[i]);
+      Mat fullStopSign(image, br);
+      cvtColor(fullStopSign, fullStopSign, COLOR_BGR2HSV);
+      inRange(fullStopSign, Scalar(28, 148, 101), Scalar(179, 255, 189), fullStopSign);
+      area = CountWhitePixels(fullStopSign);
+      if(area > size){
+        STOPSIGN_FOUND = true;
+        //return approx;
+      }
+    }
+/*
     shape = detect(approx);
     size = getArea(approx);
     if ((shape == "octagon") && (size > biggest)) {
       biggest = size;
       bigC = approx;
     }
+    */
   }
-  return bigC;
+  //return null;
+}
+
+int CountWhitePixels(Mat img) {
+  vector<Point> all_pixels;
+  findNonZero(img, all_pixels);
+  return all_pixels.size();
 }
 
 void StopSignDetection::showAllShapes(const Mat &image) {
