@@ -25,7 +25,7 @@ class StopSignDetection {
 
   bool STOPSIGN_FOUND = false;
   double area = 0;
-
+  int CountWhitePixels(Mat img) 
   vector<Point> getBiggestOctagon(const Mat &image , int size);
   string detect(const vector<Point> &input);
   void followStopsign();
@@ -189,7 +189,6 @@ vector<Point> StopSignDetection::getBiggestOctagon(const Mat &image , int size) 
   vector<Point> bigC;
 
   string shape;
-  double size;
   vector<Point> approx;
 
   for (size_t i = 0; i < contours.size(); i++) {
@@ -197,7 +196,7 @@ vector<Point> StopSignDetection::getBiggestOctagon(const Mat &image , int size) 
     if (fabs(contourArea(contours[i])) < 100 || !isContourConvex(approx))
       continue;
     if(approx.size() == 8){
-      Rect br = boundingRect(contours2[i]);
+      Rect br = boundingRect(contours[i]);
       Mat fullStopSign(image, br);
       cvtColor(fullStopSign, fullStopSign, COLOR_BGR2HSV);
       inRange(fullStopSign, Scalar(28, 148, 101), Scalar(179, 255, 189), fullStopSign);
@@ -219,7 +218,7 @@ vector<Point> StopSignDetection::getBiggestOctagon(const Mat &image , int size) 
   //return null;
 }
 
-int CountWhitePixels(Mat img) {
+int StopSignDetection::CountWhitePixels(Mat img) {
   vector<Point> all_pixels;
   findNonZero(img, all_pixels);
   return all_pixels.size();
