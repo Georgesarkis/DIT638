@@ -104,20 +104,6 @@ int32_t main(int32_t argc, char **argv) {
       od4.send(responseMsg);
     });
 
-    //: LinearAcceleration logic
-    /*od4.dataTrigger(2004, [&od4, &pedalReq](cluon::data::Envelope &&envelope) {
-      LinearAcceleration linAccSpeed =
-          cluon::extractMessage<LinearAcceleration>(std::move(envelope));
-      double countourArea = linAccSpeed.contourArea();
-      std::cout << "Leading Car contour area: " << countourArea << std::endl;
-
-      double carSpeed = linearACC.getSpeed(countourArea);
-
-      std::cout << "Car speed: " << carSpeed << std::endl;
-      pedalReq.position((float)carSpeed);
-      od4.send(pedalReq);
-    });*/
-
      //bool runOnce = false;
      bool afterStopSign = false;
 
@@ -144,17 +130,6 @@ int32_t main(int32_t argc, char **argv) {
           od4.send(pedalReq);
           od4.send(currentDriveMode);
     });
-
-    //: Calibrate steering
-    /*od4.dataTrigger(2006, [&od4, &steerReq](cluon::data::Envelope &&envelope) {
-      CalibrateSteering calibrateSteering = cluon::extractMessage<CalibrateSteering>(std::move(envelope));
-      if (calibrateSteering.CalibrateSteeringAngle() < 0 || calibrateSteering.CalibrateSteeringAngle() > 0) {
-        steerReq.groundSteering((long)calibrateSteering.CalibrateSteeringAngle());
-        od4.send(steerReq);
-        std::cout << "Calibrate Steering Angle: "
-                  << calibrateSteering.CalibrateSteeringAngle() << std::endl;
-      }
-    });*/
 
     od4.dataTrigger(2007, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
       InstructionMode instructionMode = cluon::extractMessage<InstructionMode>(std::move(envelope));

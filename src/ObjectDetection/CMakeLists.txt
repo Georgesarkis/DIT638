@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.2)
 
-project(newobject)
+project(objectDetection)
 
 include_directories(includes)
 

@@ -1,1 +1,0 @@
-docker run --rm -ti --init --ipc=host -e DISPLAY=$DISPLAY --device /dev/video0 -v /tmp:/tmp chalmersrevere/opendlv-device-camera-opencv-multi:v0.0.11 --camera=/dev/video0 --width=640 --height=480 --freq=20
