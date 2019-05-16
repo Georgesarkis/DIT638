@@ -55,13 +55,17 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE) {
   // Logic to comparing the white erea
   if (WhiteInLeft > WhiteInRight && WhiteInLeft - WhiteInRight > 100 &&
       WhiteInLeft >= WhiteInTop && WhiteInTop == 0) {
-    countRight++;
+    trafficSignArray[2] = false;
+    //countRight++;
   } else if (WhiteInRight > WhiteInLeft && WhiteInRight - WhiteInLeft > 100 &&
              WhiteInRight >= WhiteInTop && WhiteInTop == 0) {
-    countleft++;
+    trafficSignArray[0] = false;
+    //countleft++;
   } else if (WhiteInRight != 0 && WhiteInLeft != 0 && WhiteInTop > 400) {
-    countForward++;
+    trafficSignArray[1] = false;
+    //countForward++;
   }
+  /*
   if (countRight > 1) {
     trafficSignArray[2] = false;
     if (VERBOSE)
@@ -89,6 +93,7 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE) {
     countleft = 0;
     countRight = 0;
   }
+  */
 }
 
 Mat GetCroppedImage(Mat img) {

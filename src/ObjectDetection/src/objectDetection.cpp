@@ -51,6 +51,8 @@ int32_t main(int32_t argc, char **argv) {
         const bool VERBOSE{commandlineArguments.count("verbose") != 0};
         const bool VIDEO{commandlineArguments.count("video") != 0};
         const uint16_t MISSEDSIGNS{static_cast<uint16_t>(stoi(commandlineArguments["missed"]))};
+        const double MINAREA{static_cast<double>(stod(commandlineArguments["minarea"]))};
+
 
         if (sharedMemory && sharedMemory->valid()) { 
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
@@ -97,7 +99,7 @@ int32_t main(int32_t argc, char **argv) {
             od4.send(driveMode);
             bool STOPSIGN_DETECTION = true;
 
-            ssd.setMinArea(1000);
+            ssd.setMinArea(MINAREA);
             ssd.setNumberOfMissedSign(MISSEDSIGNS);
 
             while(od4.isRunning()){
@@ -117,12 +119,18 @@ int32_t main(int32_t argc, char **argv) {
                 
                 if(mode == 0){
                     trafficRules = ShapeDetection(img, VERBOSE, VIDEO);
-
+                    
+                    //Follow lead car:
                     areaOfContour = carScan.findLeadCar(orangeInputImage , VIDEO);
                     if(areaOfContour > 1000){
                         distance = leadCarStatus(areaOfContour); 
                         leadCarDistance.distance(distance);
                         od4.send(leadCarDistance);
+                    }
+                    else{
+                      //Find left car:
+                        leftCar = ccars.findCars(greenInputImage, 0, leftCar);
+                        amountOfCars = leftCar;
                     }
 
                     Mat image(img);
@@ -166,8 +174,9 @@ int32_t main(int32_t argc, char **argv) {
                     //TODO add linearacceleration
                     //TODO add calibration
 
-                    leftCar = ccars.findCars(greenInputImage, 0, leftCar);
-                    amountOfCars = leftCar + frontCar + rightCar;
+                    //Find left car:
+                    //leftCar = ccars.findCars(greenInputImage, 0, leftCar);
+                    //amountOfCars = leftCar;
                 } else {  //2nd mode
                   //driveMode.atStopSign(false);
                   //od4.send(driveMode);
