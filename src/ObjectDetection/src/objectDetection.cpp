@@ -235,15 +235,12 @@ string leadCarStatus(double areaOfContour){
   double minOutOfBounds = 200;
   if(areaOfContour >= minAcceptableArea && areaOfContour <= maxAcceptableArea){
       distance = "ok";
-      if (VERBOSE) cout << "perfect, stay here" << endl;
   }
-  else if(areaOfContour < minAcceptableArea && areaOfContour > minOutOfbBounds){
-      distance = "too far"
-      if (VERBOSE) cout << "too far away, drive forward!" << endl;
+  else if(areaOfContour < minAcceptableArea && areaOfContour > minOutOfBounds){
+      distance = "too far";
   }
   else if(areaOfContour > maxAcceptableArea){
-      distance = "too close"
-      if (VERBOSE) cout << "too close, stop!" << endl;
+      distance = "too close";
   }
   return distance;
 }
