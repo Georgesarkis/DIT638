@@ -77,6 +77,8 @@ int32_t main(int32_t argc, char **argv) {
             float frontSensorValue = 0.0;
             float leftSensorValue = 0.0;
             
+            bool runOnce = true;
+
             std::array<bool, 3> trafficRules;
             TrafficRules trafficSignRules;
             opendlv::proxy::PedalPositionRequest pedalReq;
@@ -123,15 +125,15 @@ int32_t main(int32_t argc, char **argv) {
                       Mat drawing = Mat::zeros(frame_thresholdred.size(), CV_8UC3);
 
                       vector<Point> contour = ssd.getBiggestOctagon(grayImg);
-                      Point pt = ssd.getCenter(contour);
-                      double area = ssd.getArea(contour);
+                      //Point pt = ssd.getCenter(contour);
+                      double contArea = ssd.getArea(contour); //was area
 
                       if(VERBOSE){
-                        cout << "Current Octagon area :" << area << endl;
+                        //cout << "Current Octagon area :" << area << endl;
                       }
 
-                      if(ssd.Threshhold_reached == false){
-                        ssd.setArea(area);
+                      if(ssd.Threshhold_reached == false){ //was area
+                        ssd.setArea(contArea);
                         ssd.stopSignLogic();
                       }else{
                           cout << "-- Exiting stopsign detection." <<  " -- Failed frames: " << ssd.failed_frames << endl;
@@ -153,36 +155,47 @@ int32_t main(int32_t argc, char **argv) {
 
                     leftCar = ccars.findCars(greenInputImage, 0, leftCar);
                     amountOfCars = leftCar + frontCar + rightCar;
-                } else {
+                } else {  //2nd mode
                   //driveMode.atStopSign(false);
                   //od4.send(driveMode);
 
-                    bool runOnce = true;
                     if(runOnce){
-                        frontCar = ccars.findCars(greenInputImage, 1, frontCar);
-                        rightCar = ccars.findCars(greenInputImage, 2, rightCar);
+                        cout << "ran FIND FRONT RIGHT cars" << endl;
+                        frontCar = ccars.findCars(greenInputImage, 1, frontCar); //needs to run after car has stopped fully
+                        rightCar = ccars.findCars(greenInputImage, 2, rightCar);  //needs to run after car has stopped fully
+                        amountOfCars = leftCar + frontCar + rightCar;
                         runOnce = false;
                     }
                     if (amountOfCars == 0) {
+                        
+                        //cout << "Cars 0, entered drive out of intersection" << endl;
+                        
                         instructionMode.directionAllowed(true);
                         od4.send(instructionMode);
+
+                        //break;
                     } else {
+                        //  **Credit: --->this code is based on example_control code, start*
+                        //cout << "in else for count passing cars" << endl;                        
                         auto onDistanceReading{
-                            [&od4, &gotNewDataFromLeft,&leftSensorValue, &frontSensorValue,&frontTotalSum, &frontCounter, &leftCounter,&leftTotalSum, &falseCounter](cluon::data::Envelope &&envelope) {
+                          [&od4, &gotNewDataFromLeft,&leftSensorValue, &frontSensorValue,&frontTotalSum, &frontCounter, &leftCounter,&leftTotalSum, &falseCounter](cluon::data::Envelope &&envelope) {
                             auto msg = cluon::extractMessage<opendlv::proxy::DistanceReading>(std::move(envelope));
-                            const uint16_t senderStamp = envelope.senderStamp(); // Local variables are not available
+                            const uint16_t senderStamp = envelope.senderStamp();
                             gotNewDataFromLeft = false;
-                                if (senderStamp == 0) {
-                                    frontSensorValue = getSensorData(msg.distance(), 0, frontTotalSum, frontCounter,gotNewDataFromLeft, falseCounter);
-                                } else if (senderStamp == 1) {
-                                    leftSensorValue = getSensorData(msg.distance(), 1, leftTotalSum, leftCounter,gotNewDataFromLeft, falseCounter);
-                                }
+                              
+                            if (senderStamp == 0) {
+                                frontSensorValue = getSensorData(msg.distance(), 0, frontTotalSum, frontCounter,gotNewDataFromLeft, falseCounter);
+                            } 
+                            else if (senderStamp == 1) {
+                                leftSensorValue = getSensorData(msg.distance(), 1, leftTotalSum, leftCounter,gotNewDataFromLeft, falseCounter);
                             }
+
+                          }
                         };
                         od4.dataTrigger(opendlv::proxy::DistanceReading::ID(),onDistanceReading);
                         //  **Credit: --->this code is based on example_control code, end*
 
-                        // count how many cars pass by and remove from frontCounter
+                        // count how many cars pass by:
                         amountOfCars = ccars.countPassingCars(frontSensorValue, amountOfCars, 0, blackInputImage);
                         if (!gotNewDataFromLeft) {
                             falseCounter++;

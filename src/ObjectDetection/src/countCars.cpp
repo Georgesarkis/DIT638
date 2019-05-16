@@ -27,11 +27,7 @@ int minTime = 60;
 int timeCounter = minTime + 1;
 int camTimeCounter = minTime + 1;
 int leftTimeCounter = minTime + 1;
-float previousSensorData =
-    0; // since we first check front sensor and then left sensor we can check
-       // this? to compare the front sensor if insideof bounds or not
-// if in of bpunds we dont say false if out of bounds nothing is seen in front
-// so we say false
+float previousSensorData = 0; 
 
 bool carOnCamera = false;
 int carFound;
@@ -41,12 +37,8 @@ std::vector<std::vector<cv::Point>>
 findContoursInROI(int xC, int yC, int widthC, int heightC, Mat image);
 
 // ****METHOD:
-int countCars::findCars(
-    Mat image, int side,
-    int prevAmount) { // count the amount of contours in this left rectangle and
-                      // return the output
-
-  // either have the sides for roi here or let user input them as parameters
+int countCars::findCars(Mat image, int side, int prevAmount) { // count the amount of contours in this left rectangle and
+  
   if (side == 0) { // left side roi
     x = 0;
     y = 0;
@@ -68,20 +60,11 @@ int countCars::findCars(
 
   foundContours = findContoursInROI(x, y, width, height, image);
 
-  // if(onpc){
-  // imshow("Image", image);  //inserted this here now, used to be at the bottom
-  // tho waitKey(1);
-  //}
-
-  if (foundContours.size() >=
-      1) { // should remake this in a function for less code repetition maybe
-           // (can wait for later tho)
+  if (foundContours.size() >= 1) { // should remake this in a function for less code repetition maybe // (can wait for later tho)
     for (size_t i = 0; i < foundContours.size(); i++) {
-      // cout << "           contour area: " << contourArea(foundContours[i])
-      // <<endl;
+      // cout << "           contour area: " << contourArea(foundContours[i]) << endl;
       if (side == 0 && !enteredLeft && prevAmount == 0) { // left cars
-        if (contourArea(foundContours[i]) > 250 &&
-            contourArea(foundContours[i]) < 2000) {
+        if (contourArea(foundContours[i]) > 250 && contourArea(foundContours[i]) < 2000) {
           cout << "----->left car found" << endl;
           enteredLeft = true;
           return 1;
@@ -91,8 +74,8 @@ int countCars::findCars(
         }
       }
       if (side == 1 && !enteredFront && prevAmount == 0) { // front cars
-        if (contourArea(foundContours[i]) > 450 &&
-            contourArea(foundContours[i]) < 650) { // change these numbers!!!
+        cout << "           contour area FRONT: " << contourArea(foundContours[i]) << endl;        
+        if (contourArea(foundContours[i]) > 740 && contourArea(foundContours[i]) < 2200) { // change these numbers!!! was 450 to 650 for both front and right
           cout << "----->front car found" << endl;
           enteredFront = true;
           return 1;
@@ -101,11 +84,9 @@ int countCars::findCars(
           enteredFront = true;
         }
       }
-      if (side == 2 && !enteredRight &&
-          prevAmount == 0) { // right cars  //for this we should move the green
-                             // note forward on the car
-        if (contourArea(foundContours[i]) > 450 &&
-            contourArea(foundContours[i]) < 650) { // change these numbers!!!
+      if (side == 2 && !enteredRight && prevAmount == 0) { // right cars  //for this we should move the green note forward on the car
+        cout << "           contour area RIGHT: " << contourArea(foundContours[i]) << endl;        
+        if (contourArea(foundContours[i]) > 740 && contourArea(foundContours[i]) < 3500) { // change these numbers!!!
           cout << "----->right car found" << endl;
           enteredRight = true;
           return 1;
@@ -120,9 +101,7 @@ int countCars::findCars(
 }
 
 // ****METHOD:
-int countCars::countPassingCars(
-    float sensorDistance, int currentAmountOfCars, int sensorType,
-    Mat image) { // this input should be the calculated median value or w.e
+int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, int sensorType, Mat image) {
 
   carFound = 0; // for the camera
 
@@ -146,8 +125,7 @@ int countCars::countPassingCars(
         } else {
           timeCounter = 0;
           currentAmountOfCars--;
-          cout << "       one car passed FROOOOOOOONT at DISTANCE: "
-               << sensorDistance << endl;
+          cout << "       one car passed FROOOOOOOONT at DISTANCE: " << sensorDistance << endl;
         }
         carPassed = true;
       }
@@ -157,15 +135,11 @@ int countCars::countPassingCars(
     if (sensorDistance <= 0.31 &&
         sensorDistance >= 0.045) { // make these variables
       if (currentAmountOfCars > 0 && !carPassed) {
-        if (timeCounter < minTime || camTimeCounter < minTime ||
-            leftTimeCounter < minTime) {
-          cout << "DONT count this car"
-               << endl; // maybe set carpassed = true here för att den inte ska
-                        // fortsätta räkna varje vi ser som ny
+        if (timeCounter < minTime || camTimeCounter < minTime || leftTimeCounter < minTime) {
+          cout << "DONT count this car" << endl; // maybe set carpassed = true here för att den inte ska fortsätta räkna varje vi ser som ny
           carPassed = true; // added this
         } else {
-          cout << "       one car passed LEEEEEEEEEEEEFT side at DISTANCE: "
-               << sensorDistance << endl;
+          cout << "       one car passed LEEEEEEEEEEEEFT side at DISTANCE: " << sensorDistance << endl;
           currentAmountOfCars--;
           carPassed = true;
           leftTimeCounter = 0;
@@ -174,9 +148,6 @@ int countCars::countPassingCars(
     }
   }
 
-  // maybe need to put this below here also in an if statement because if the
-  // front car driving right does get picked up by the sensor, we DONT also want
-  // to pick it up with the camera because we get wrong number of cars passed
   x = 0;
   y = 285;
   width = 210;
@@ -187,8 +158,7 @@ int countCars::countPassingCars(
   if (foundContours.size() >= 1) {
     for (size_t i = 0; i < foundContours.size(); i++) {
       // cout << "contour: " << contourArea(foundContours[i]) << endl;
-      if (contourArea(foundContours[i]) > 20 &&
-          contourArea(foundContours[i]) < 650) { // changed from 60 to 20
+      if (contourArea(foundContours[i]) > 20 && contourArea(foundContours[i]) < 650) { // changed from 60 to 20
         if (currentAmountOfCars > 0 && !carPassed) {
           if (camTimeCounter > minTime && timeCounter > minTime) {
             currentAmountOfCars--;
@@ -201,23 +171,15 @@ int countCars::countPassingCars(
         carFound = 1;
       }
     }
-    if (carFound == 0) { // might be overkill with all these things and there is
-                         // a simpler way
+    if (carFound == 0) {
       carOnCamera = false;
       carPassed = false;
     }
   }
 
-  if ((sensorDistance > 0.65 || sensorDistance < 0.03) &&
-      (previousSensorData > 0.65 || previousSensorData < 0.03) &&
-      !carOnCamera && currentAmountOfCars > 0) {
+  if ((sensorDistance > 0.65 || sensorDistance < 0.03) && (previousSensorData > 0.65 || previousSensorData < 0.03) && !carOnCamera && currentAmountOfCars > 0) {
     carPassed = false;
-    // cout << "       ***no car***" << endl; //stops showing up after having
-    // counted 3 cars
-  }
-  if (carPassed && currentAmountOfCars > 0) {
-    // cout << "current data: "  << sensorDistance << ". prev data: " <<
-    // previousSensorData << " carPassed = " << carPassed << endl;
+    // cout << "       ***no car***" << endl; //stops showing up after having counted 3 cars
   }
 
   timeCounter++;
@@ -230,18 +192,13 @@ int countCars::countPassingCars(
 }
 
 // ****METHOD:
-std::vector<std::vector<cv::Point>> countCars::findContoursInROI(int xC, int yC,
-                                                                 int widthC,
-                                                                 int heightC,
-                                                                 Mat image) {
+std::vector<std::vector<cv::Point>> countCars::findContoursInROI(int xC, int yC, int widthC, int heightC, Mat image) {
   std::vector<std::vector<cv::Point>> contours;
 
   Rect roiAreaRectangle(xC, yC, widthC, heightC);
-  Mat roiImage =
-      image(roiAreaRectangle); // get the region of interest of original image
+  Mat roiImage = image(roiAreaRectangle); // get the region of interest of original image
 
-  rectangle(image, roiAreaRectangle, Scalar(255), 1, 8,
-            0); // draw the rectangle for the area on the original picture
+  rectangle(image, roiAreaRectangle, Scalar(255), 1, 8, 0); // draw the rectangle for the area on the original picture
 
   cv::findContours(roiImage, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
 
