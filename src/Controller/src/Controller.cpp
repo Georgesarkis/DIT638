@@ -21,8 +21,10 @@ int32_t main(int32_t argc, char **argv) {
   } else {
     const uint16_t CID{static_cast<uint16_t>(stoi(commandlineArguments["cid"]))};
     const float SPEED{static_cast<float>(stof(commandlineArguments["speed"]))};
-    const float LEFT{static_cast<float>(stof(commandlineArguments["left"]))};
-    const float RIGHT{static_cast<float>(stof(commandlineArguments["right"]))};
+    const float leftangle{static_cast<float>(stof(commandlineArguments["langle"]))};
+    const float rightangle{static_cast<float>(stof(commandlineArguments["rangle"]))};
+    const float leftdelay{static_cast<float>(stof(commandlineArguments["ldelay"]))};
+    const float rightdelay{static_cast<float>(stof(commandlineArguments["rdelay"]))};
 
     cluon::OD4Session od4{CID};
 
@@ -48,7 +50,7 @@ int32_t main(int32_t argc, char **argv) {
 
     //: Driving out of the intersection
     od4.dataTrigger(2001, [&od4, &TurnLeft, &TurnRight, &GoForward, &pedalReq,
-                          &steerReq, &directionInstructionMode, &RIGHT, &LEFT](cluon::data::Envelope &&envelope) {
+                          &steerReq, &directionInstructionMode, &rightangle, &SPEED, &leftangle, &leftdelay, &rightdelay](cluon::data::Envelope &&envelope) {
       DirectionInstruction receivedMsg =
           cluon::extractMessage<DirectionInstruction>(std::move(envelope));
       DirectionResponse responseMsg;
@@ -59,16 +61,16 @@ int32_t main(int32_t argc, char **argv) {
         std::cout << "ALLOWED. DRIVING NOW" << endl;
         responseMsg.response("Direction allowed");
 
-        float speed = 0.12f;
-        float initialBoostSpeed = 0.2f;
+        //float speed = 0.12f;
+        //float initialBoostSpeed = 0.2f;
         float stop = 0.0f;
         //float leftSteerAngle = 0.11f;
         //float rightSteerAngle = -0.4f;
 
-        float forwardSteerAngle = -0.04f;
-        uint16_t rightDelay = 3300;
-        uint16_t otherDirectionDelay = 1900;
-        uint16_t boostDelay = 5;
+        float forwardSteerAngle = -0.109f;
+        //uint16_t rightDelay = 3300;
+        //uint16_t otherDirectionDelay = 1900;
+        //uint16_t boostDelay = 5;
         //** Initial boost to car **//
         /*pedalReq.position(initialBoostSpeed);
         od4.send(pedalReq);
@@ -79,16 +81,16 @@ int32_t main(int32_t argc, char **argv) {
         od4.send(pedalReq);*/
         //** End initial boost **//
 
-        pedalReq.position(speed);
+        pedalReq.position(SPEED);
         std::string direction = receivedMsg.direction();
-        float steer = direction == "left" ? LEFT : direction == "right" ? RIGHT : forwardSteerAngle;
+        float steer = direction == "left" ? leftangle : direction == "right" ? rightangle : forwardSteerAngle;
         //cout << "SPEED: " << pedalReq.position() << endl;
         steerReq.groundSteering(steer);
         cout << "STEER: " << steerReq.groundSteering() << endl;
         od4.send(steerReq);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         od4.send(pedalReq);
-        int delay = direction == "right" ? rightDelay : otherDirectionDelay;
+        int delay = direction == "right" ? rightdelay : leftdelay;
         cout << "DELAY: " << delay << endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(delay));
         pedalReq.position(stop);
