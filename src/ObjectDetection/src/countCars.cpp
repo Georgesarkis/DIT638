@@ -117,7 +117,7 @@ int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, i
 
   // cout << ">>>>TC amount: " << timeCounter << endl;
   if (sensorType == 0) { // front ultrasonic
-    if (sensorDistance <= 0.65 &&
+    if (sensorDistance <= 0.58 && //maybe 0.60 is fine, or 0.55
         sensorDistance >= 0.03) { // make these variables
       if (currentAmountOfCars > 0 && !carPassed) {
         if (camTimeCounter < minTime || timeCounter < minTime) {
