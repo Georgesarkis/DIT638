@@ -13,11 +13,15 @@
 #include "StopSignDetection.cpp"
 #include "SignDetection.hpp"
 #include "countCars.hpp"
+#include "leadCarScan.cpp"
 
 using namespace std;
 using namespace cv;
 
 ShapeDetector ssd;
+leadCarScan carScan;
+
+string leadCarStatus(double areaOfContour);
 Mat getInterval(Mat img, string color);
 array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO);
 float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &counter, bool &gotNewDataFromLeft, int &falseCounter);
@@ -76,14 +80,15 @@ int32_t main(int32_t argc, char **argv) {
             int leftCounter = 0;
             float frontSensorValue = 0.0;
             float leftSensorValue = 0.0;
-            
-            bool runOnce = true;
-
+            double areaOfContour = 0.0;
+            bool runOnce  = true;
+            string distance = "";
             std::array<bool, 3> trafficRules;
             TrafficRules trafficSignRules;
             opendlv::proxy::PedalPositionRequest pedalReq;
 
             DriveMode driveMode;
+            LeadCarDistance leadCarDistance;
             InstructionMode instructionMode;
             instructionMode.directionAllowed(false);
             //driveMode.directionInstruction(false); //drivemode initially set to false because we're not ready to receive instruction
@@ -108,9 +113,17 @@ int32_t main(int32_t argc, char **argv) {
 
                 Mat greenInputImage = getInterval(img, "green");
                 Mat blackInputImage = getInterval(img, "black");
-
+                Mat orangeInputImage = getInterval(img, "orange");
+                
                 if(mode == 0){
                     trafficRules = ShapeDetection(img, VERBOSE, VIDEO);
+
+                    areaOfContour = carScan.findLeadCar(orangeInputImage , VIDEO);
+                    if(areaOfContour > 1000){
+                        distance = leadCarStatus(areaOfContour); 
+                        leadCarDistance.distance(distance);
+                        od4.send(leadCarDistance);
+                    }
 
                     Mat image(img);
                     Rect myROI(0, 0, img.size().width, img.size().height * 3 / 4);
@@ -213,6 +226,26 @@ int32_t main(int32_t argc, char **argv) {
         }
     }
     return retCode;
+}
+
+string leadCarStatus(double areaOfContour){
+  string distance;
+  double minAcceptableArea = 3000; //need to look all these numbers up!
+  double maxAcceptableArea = 3500;
+  double minOutOfBounds = 200;
+  if(areaOfContour >= minAcceptableArea && areaOfContour <= maxAcceptableArea){
+      distance = "ok";
+      if (VERBOSE) cout << "perfect, stay here" << endl;
+  }
+  else if(areaOfContour < minAcceptableArea && areaOfContour > minOutOfbBounds){
+      distance = "too far"
+      if (VERBOSE) cout << "too far away, drive forward!" << endl;
+  }
+  else if(areaOfContour > maxAcceptableArea){
+      distance = "too close"
+      if (VERBOSE) cout << "too close, stop!" << endl;
+  }
+  return distance;
 }
 
 

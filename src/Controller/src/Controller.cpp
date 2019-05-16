@@ -137,6 +137,16 @@ int32_t main(int32_t argc, char **argv) {
       if(directionInstructionMode) cout << "INSTRUCTION ALLOWED " << endl;
     });
 
+    od4.dataTrigger(2008, [&pedalReq, &SPEED](cluon::data::Envelope &&envelope) {
+      LeadCarDistance leadCarDistance = cluon::extractMessage<TrafficRules>(std::move(envelope));
+      if(leadCarDistance.distance() == "too close"){
+        pedalReq.position(0.0f);
+      } else {
+        pedalReq.position(SPEED);
+      }
+      od4.send(pedalReq);
+    });
+
     while (od4.isRunning()) {
     }
   }

@@ -210,6 +210,10 @@ message CalibrateSteering [id = 2006] {
 message InstructionMode [id = 2007] {
   bool directionAllowed [id = 1];
 }
+
+message LeadCarDistance [id = 2008] {
+  string distance [id = 1];
+}
 //********************************************//
 
 message opendlv.proxy.PressureRequest [id = 1080] {
