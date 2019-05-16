@@ -21,11 +21,13 @@ int32_t main(int32_t argc, char **argv) {
   } else {
     const uint16_t CID{static_cast<uint16_t>(stoi(commandlineArguments["cid"]))};
     const float SPEED{static_cast<float>(stof(commandlineArguments["speed"]))};
+    const float LEFT{static_cast<float>(stof(commandlineArguments["left"]))};
+    const float RIGHT{static_cast<float>(stof(commandlineArguments["right"]))};
 
     cluon::OD4Session od4{CID};
 
     opendlv::proxy::PedalPositionRequest pedalReq;
-    opendlv::proxy::GroundSteeringReading steerReq;
+    opendlv::proxy::GroundSteeringRequest steerReq;
     bool TurnLeft, TurnRight, GoForward;
     bool directionInstructionMode = false;
 
@@ -46,7 +48,7 @@ int32_t main(int32_t argc, char **argv) {
 
     //: Driving out of the intersection
     od4.dataTrigger(2001, [&od4, &TurnLeft, &TurnRight, &GoForward, &pedalReq,
-                          &steerReq, &directionInstructionMode](cluon::data::Envelope &&envelope) {
+                          &steerReq, &directionInstructionMode, &RIGHT, &LEFT](cluon::data::Envelope &&envelope) {
       DirectionInstruction receivedMsg =
           cluon::extractMessage<DirectionInstruction>(std::move(envelope));
       DirectionResponse responseMsg;
@@ -60,30 +62,34 @@ int32_t main(int32_t argc, char **argv) {
         float speed = 0.12f;
         float initialBoostSpeed = 0.2f;
         float stop = 0.0f;
-        float leftSteerAngle = 0.11f;
-        float rightSteerAngle = -0.4f;
+        //float leftSteerAngle = 0.11f;
+        //float rightSteerAngle = -0.4f;
+
         float forwardSteerAngle = -0.04f;
         uint16_t rightDelay = 3300;
         uint16_t otherDirectionDelay = 1900;
         uint16_t boostDelay = 5;
         //** Initial boost to car **//
-        pedalReq.position(initialBoostSpeed);
+        /*pedalReq.position(initialBoostSpeed);
         od4.send(pedalReq);
         std::this_thread::sleep_for(std::chrono::milliseconds(boostDelay));
         pedalReq.position(stop);
         steerReq.groundSteering(stop);
         od4.send(steerReq);
-        od4.send(pedalReq);
+        od4.send(pedalReq);*/
         //** End initial boost **//
 
         pedalReq.position(speed);
-        float steer = TurnLeft
-                          ? leftSteerAngle
-                          : TurnRight ? rightSteerAngle : forwardSteerAngle;
+        std::string direction = receivedMsg.direction();
+        float steer = direction == "left" ? LEFT : direction == "right" ? RIGHT : forwardSteerAngle;
+        //cout << "SPEED: " << pedalReq.position() << endl;
         steerReq.groundSteering(steer);
+        cout << "STEER: " << steerReq.groundSteering() << endl;
         od4.send(steerReq);
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
         od4.send(pedalReq);
-        int delay = TurnRight ? rightDelay : otherDirectionDelay;
+        int delay = direction == "right" ? rightDelay : otherDirectionDelay;
+        cout << "DELAY: " << delay << endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(delay));
         pedalReq.position(stop);
         steerReq.groundSteering(stop);
@@ -97,7 +103,7 @@ int32_t main(int32_t argc, char **argv) {
     });
 
     //: LinearAcceleration logic
-    od4.dataTrigger(2004, [&od4, &pedalReq](cluon::data::Envelope &&envelope) {
+    /*od4.dataTrigger(2004, [&od4, &pedalReq](cluon::data::Envelope &&envelope) {
       LinearAcceleration linAccSpeed =
           cluon::extractMessage<LinearAcceleration>(std::move(envelope));
       double countourArea = linAccSpeed.contourArea();
@@ -108,7 +114,7 @@ int32_t main(int32_t argc, char **argv) {
       std::cout << "Car speed: " << carSpeed << std::endl;
       pedalReq.position((float)carSpeed);
       od4.send(pedalReq);
-    });
+    });*/
 
      //bool runOnce = false;
      bool afterStopSign = false;
@@ -138,7 +144,7 @@ int32_t main(int32_t argc, char **argv) {
     });
 
     //: Calibrate steering
-    od4.dataTrigger(2006, [&od4, &steerReq](cluon::data::Envelope &&envelope) {
+    /*od4.dataTrigger(2006, [&od4, &steerReq](cluon::data::Envelope &&envelope) {
       CalibrateSteering calibrateSteering = cluon::extractMessage<CalibrateSteering>(std::move(envelope));
       if (calibrateSteering.CalibrateSteeringAngle() < 0 || calibrateSteering.CalibrateSteeringAngle() > 0) {
         steerReq.groundSteering((long)calibrateSteering.CalibrateSteeringAngle());
@@ -146,7 +152,7 @@ int32_t main(int32_t argc, char **argv) {
         std::cout << "Calibrate Steering Angle: "
                   << calibrateSteering.CalibrateSteeringAngle() << std::endl;
       }
-    });
+    });*/
 
     od4.dataTrigger(2007, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
       InstructionMode instructionMode = cluon::extractMessage<InstructionMode>(std::move(envelope));
@@ -160,8 +166,7 @@ int32_t main(int32_t argc, char **argv) {
   return retCode;
 }
 
-bool directionAllowed(std::string direction, bool allowedLeft,
-                      bool allowedRight, bool allowedForward) {
+bool directionAllowed(std::string direction, bool allowedLeft, bool allowedRight, bool allowedForward) {
   if (direction == "left")
     return allowedLeft;
   if (direction == "right")

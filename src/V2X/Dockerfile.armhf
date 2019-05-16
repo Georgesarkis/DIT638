@@ -50,6 +50,6 @@ RUN echo http://dl-4.alpinelinux.org/alpine/v3.8/main > /etc/apk/repositories &&
 RUN [ "cross-build-end" ]
 
 WORKDIR /usr/bin
-COPY --from=builder /tmp/bin/SendInstruction .
-ENTRYPOINT ["/usr/bin/SendInstruction"]
+COPY --from=builder /tmp/bin/v2x .
+ENTRYPOINT ["/usr/bin/v2x"]
 

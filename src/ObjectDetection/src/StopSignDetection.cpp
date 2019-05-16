@@ -73,7 +73,7 @@ bool ShapeDetector::followStopsign(){
     cout << "Failed frame." << endl;
   }else if(area >= minStopSignArea){
     number_of_missed_signs = 0;
-    cout << "-- Stop sign found , reseting counter ---- " << endl;
+    //cout << "-- Stop sign found , reseting counter ---- " << endl;
   }else if(area < minStopSignArea){
     number_of_missed_signs++;
     cout << "Not seeing stop sign . Frames not seen : " << number_of_missed_signs << endl;
