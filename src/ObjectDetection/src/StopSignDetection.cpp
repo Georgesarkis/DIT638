@@ -23,9 +23,9 @@ public:
   bool stopSignInRange(const double &input);
   void setMinArea(double input);
   void setNumberOfMissedSign(int numberOfMissedSigns);
-  bool lookForStopSign();
+  bool lookForStopSign(bool red);
   bool followStopsign();
-  bool stopSignLogic();
+  bool stopSignLogic(bool red);
   void setArea(double &input);
 
 };
@@ -59,8 +59,8 @@ double ShapeDetector::getArea(const vector<Point> &input) {
 }
 
 //: Looks for the stop sign
-bool ShapeDetector::lookForStopSign(){
-  if(area > minStopSignArea){
+bool ShapeDetector::lookForStopSign(bool red){
+  if(area > minStopSignArea && red){
     cout << "----- Found a stopsign! - Starting to follow it ------";
     followingStopSign = true;
   }
@@ -90,12 +90,12 @@ bool ShapeDetector::followStopsign(){
 }
 
 //: logic for determinging if we are following the stopsign
-bool ShapeDetector::stopSignLogic() {
+bool ShapeDetector::stopSignLogic(bool red) {
 
   if(followingStopSign){
     return followStopsign();
   }else{
-    return lookForStopSign();
+    return lookForStopSign(red);
   }
 
 }

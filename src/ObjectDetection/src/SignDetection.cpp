@@ -51,15 +51,18 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE) {
   int WhiteInRight = CountWhitePixels(right_sign);
   int WhiteInLeft = CountWhitePixels(left_sign);
   int WhiteInTop = CountWhitePixels(top_sign);
-  cout << "WHITE RIGHT: " << WhiteInRight << endl;
-  cout << "WHITE LEFT: " << WhiteInLeft << endl;
-  cout << "WHITE FORWARD: " << WhiteInTop << endl;
+  if(VERBOSE){
+    cout << "WHITE RIGHT: " << WhiteInRight << endl;
+    cout << "WHITE LEFT: " << WhiteInLeft << endl;
+    cout << "WHITE FORWARD: " << WhiteInTop << endl;
+  }
 
   // Logic to comparing the white erea
   if (WhiteInLeft > WhiteInRight && WhiteInLeft - WhiteInRight > 100 &&
       WhiteInLeft >= WhiteInTop ){//&& WhiteInTop == 0) {
     trafficSignArray[2] = false;
     cout << "==============can't turn right sign found==============" << endl;
+
     //countRight++;
   } else if (WhiteInRight > WhiteInLeft && WhiteInRight - WhiteInLeft > 100 &&
              WhiteInRight >= WhiteInTop ){//&& WhiteInTop == 0) {

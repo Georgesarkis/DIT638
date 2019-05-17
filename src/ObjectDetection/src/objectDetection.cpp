@@ -21,10 +21,13 @@ using namespace cv;
 ShapeDetector ssd;
 leadCarScan carScan;
 
+bool StopSignRed(Mat img, vector<Point> contour, bool VIDEO);
+int CountWhitePixels(Mat img);
 string leadCarStatus(double areaOfContour);
 Mat getInterval(Mat img, string color);
 array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO);
 float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &counter, bool &gotNewDataFromLeft, int &falseCounter);
+bool stopSignRed( vector<Point> contour,Mat img , bool VIDEO);
 
 // GET ULTRASONIC/IR-SENSOR VALUES:
 const int MAXCOUNT = 4; //was 3
@@ -58,14 +61,13 @@ int32_t main(int32_t argc, char **argv) {
         if (sharedMemory && sharedMemory->valid()) { 
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
             
-            int mode;
+            int mode = 0;
 
             od4.dataTrigger(2005, [&od4, &mode](cluon::data::Envelope &&envelope) {
               DriveMode currentDriveMode = cluon::extractMessage<DriveMode>(std::move(envelope));
               mode = currentDriveMode.mode();
             });
 
-            //int mode = 0;
             countCars ccars;
 
             ////**COUNTING CARS:**////
@@ -148,15 +150,15 @@ int32_t main(int32_t argc, char **argv) {
                     Rect myROI(0, 0, img.size().width, img.size().height * 3 / 4);
                     Mat croppedImage = image(myROI);
 
-                    Mat grayImg, hsvImg, frame_thresholdred, frame_thresholdgreen;
+                    Mat grayImg, frame_thresholdgreen;
                     cvtColor(croppedImage, grayImg, COLOR_BGR2GRAY);
-                    cvtColor(croppedImage, hsvImg, COLOR_BGR2HSV);
 
                     if(STOPSIGN_DETECTION){
 
-                      Mat drawing = Mat::zeros(frame_thresholdred.size(), CV_8UC3);
-
                       vector<Point> contour = ssd.getBiggestOctagon(grayImg);
+
+                      bool red = stopSignRed(contour, img, VIDEO);
+                      
                       //Point pt = ssd.getCenter(contour);
                       double contArea = ssd.getArea(contour); //was area
 
@@ -166,7 +168,7 @@ int32_t main(int32_t argc, char **argv) {
 
                       if(ssd.Threshhold_reached == false){ //was area
                         ssd.setArea(contArea);
-                        ssd.stopSignLogic();
+                        ssd.stopSignLogic(red);
                       }else{
                           cout << "-- Exiting stopsign detection." <<  " -- Failed frames: " << ssd.failed_frames << endl;
                           STOPSIGN_DETECTION = false;
@@ -189,9 +191,6 @@ int32_t main(int32_t argc, char **argv) {
                     //leftCar = ccars.findCars(greenInputImage, 0, leftCar);
                     //amountOfCars = leftCar;
                 } else {  //2nd mode
-                  //driveMode.atStopSign(false);
-                  //od4.send(driveMode);
-
                     if(runOnce){
                         cout << "ran FIND FRONT RIGHT cars" << endl;
                         frontCar = ccars.findCars(greenInputImage, 1, frontCar); //needs to run after car has stopped fully
@@ -279,6 +278,9 @@ Mat getInterval(Mat img, string color){
   else if (color == "green"){ //green
     inRange(hsvImg, Scalar(30, 80, 125), Scalar(55, 255, 255), intervalOutput);
   }
+  else if(color == "red"){ //red
+    inRange(hsvImg, Scalar(0, 133, 83), Scalar(8, 187, 255), intervalOutput);
+  }
   return intervalOutput;
 }
 
@@ -320,4 +322,23 @@ float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &
     return leftValue;
   }
   return -1;
+}
+
+bool stopSignRed(vector<Point> contour , Mat img  , bool VIDEO){
+    Mat frame_thresholdred;
+    Rect br = boundingRect(contour);
+    Mat FullStopSign(img, br);
+    frame_thresholdred = getInterval(FullStopSign, "red");
+    int WhitePixelsInStopSign = CountWhitePixels(frame_thresholdred);
+
+    cout << "area of red" << WhitePixelsInStopSign << endl;
+    if(VIDEO && WhitePixelsInStopSign > 1000){
+      imshow("FullStopSign" , FullStopSign);
+    }
+    if(WhitePixelsInStopSign > 500){
+      return true;
+    }
+    else{
+      return false;
+    }
 }
