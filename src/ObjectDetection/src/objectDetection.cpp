@@ -27,7 +27,7 @@ array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO);
 float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &counter, bool &gotNewDataFromLeft, int &falseCounter);
 
 // GET ULTRASONIC/IR-SENSOR VALUES:
-const int MAXCOUNT = 3;
+const int MAXCOUNT = 4; //was 3
 float frontSensorData[MAXCOUNT];
 float leftSensorData[MAXCOUNT];
 
@@ -52,6 +52,7 @@ int32_t main(int32_t argc, char **argv) {
         const bool VIDEO{commandlineArguments.count("video") != 0};
         const uint16_t MISSEDSIGNS{static_cast<uint16_t>(stoi(commandlineArguments["missed"]))};
         const double MINAREA{static_cast<double>(stod(commandlineArguments["minarea"]))};
+        const uint16_t LOOKLEFT{static_cast<uint16_t>(stoi(commandlineArguments["look"]))};
 
 
         if (sharedMemory && sharedMemory->valid()) { 
@@ -83,7 +84,11 @@ int32_t main(int32_t argc, char **argv) {
             float frontSensorValue = 0.0;
             float leftSensorValue = 0.0;
             double areaOfContour = 0.0;
+            
             bool runOnce  = true;
+            bool leadCarSeen = false;
+            int lookLeft = 0;
+            
             string distance = "";
             std::array<bool, 3> trafficRules;
             TrafficRules trafficSignRules;
@@ -123,14 +128,20 @@ int32_t main(int32_t argc, char **argv) {
                     //Follow lead car:
                     areaOfContour = carScan.findLeadCar(orangeInputImage , VIDEO);
                     if(areaOfContour > 1000){
+                        leadCarSeen = true;
+
+                        cout << "areaOfContour for the lead car: " << areaOfContour << endl;
                         distance = leadCarStatus(areaOfContour); 
                         leadCarDistance.distance(distance);
                         od4.send(leadCarDistance);
-                    }
-                    else{
+                    } 
+                    
+                    if(!leadCarSeen && lookLeft < LOOKLEFT){
                       //Find left car:
+                        cout << "entered find left car" << endl;
                         leftCar = ccars.findCars(greenInputImage, 0, leftCar);
                         amountOfCars = leftCar;
+                        lookLeft++;
                     }
 
                     Mat image(img);

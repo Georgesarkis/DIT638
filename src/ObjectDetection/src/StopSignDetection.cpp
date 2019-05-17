@@ -161,12 +161,18 @@ vector<Point> ShapeDetector::getBiggestOctagon(const Mat &image) {
   vector<Point> bigC;
   string shape;
   double size;
+
+  vector<Point> approx;
   for (size_t i = 0; i < contours.size(); i++) {
-    shape = detect(contours[i]);
-    size = getArea(contours[i]);
+
+     approxPolyDP(Mat(contours[i]), approx,
+                 arcLength(Mat(contours[i]), true) * 0.02, true);
+
+    shape = detect(approx);
+    size = getArea(approx);
     if ((shape == "octagon") && (size > biggest)) {
       biggest = size;
-      bigC = contours[i];
+      bigC = approx;
     }
   }
 

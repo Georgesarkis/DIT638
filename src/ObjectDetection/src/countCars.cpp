@@ -40,9 +40,10 @@ findContoursInROI(int xC, int yC, int widthC, int heightC, Mat image);
 int countCars::findCars(Mat image, int side, int prevAmount) { // count the amount of contours in this left rectangle and
   
   if (side == 0) { // left side roi
+    cout << "in find left car" << endl;
     x = 0;
     y = 0;
-    width = 130;
+    width = 150; //was 130
     height = 324;
   } else if (side == 1) { // middle/front roi
     x = 0;
@@ -64,7 +65,8 @@ int countCars::findCars(Mat image, int side, int prevAmount) { // count the amou
     for (size_t i = 0; i < foundContours.size(); i++) {
       // cout << "           contour area: " << contourArea(foundContours[i]) << endl;
       if (side == 0 && !enteredLeft && prevAmount == 0) { // left cars
-        if (contourArea(foundContours[i]) > 250 && contourArea(foundContours[i]) < 2000) {
+        cout << "           contour area LEFT: " << contourArea(foundContours[i]) << endl;        
+        if (contourArea(foundContours[i]) > 100 && contourArea(foundContours[i]) < 2000) { //maybe change to 740
           cout << "----->left car found" << endl;
           enteredLeft = true;
           return 1;

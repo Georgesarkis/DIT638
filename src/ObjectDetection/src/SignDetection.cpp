@@ -51,18 +51,24 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE) {
   int WhiteInRight = CountWhitePixels(right_sign);
   int WhiteInLeft = CountWhitePixels(left_sign);
   int WhiteInTop = CountWhitePixels(top_sign);
+  cout << "WHITE RIGHT: " << WhiteInRight << endl;
+  cout << "WHITE LEFT: " << WhiteInLeft << endl;
+  cout << "WHITE FORWARD: " << WhiteInTop << endl;
 
   // Logic to comparing the white erea
   if (WhiteInLeft > WhiteInRight && WhiteInLeft - WhiteInRight > 100 &&
-      WhiteInLeft >= WhiteInTop && WhiteInTop == 0) {
+      WhiteInLeft >= WhiteInTop ){//&& WhiteInTop == 0) {
     trafficSignArray[2] = false;
+    cout << "==============can't turn right sign found==============" << endl;
     //countRight++;
   } else if (WhiteInRight > WhiteInLeft && WhiteInRight - WhiteInLeft > 100 &&
-             WhiteInRight >= WhiteInTop && WhiteInTop == 0) {
+             WhiteInRight >= WhiteInTop ){//&& WhiteInTop == 0) {
     trafficSignArray[0] = false;
+    cout << "==============can't go forward sign found==============" << endl;
     //countleft++;
   } else if (WhiteInRight != 0 && WhiteInLeft != 0 && WhiteInTop > 400) {
     trafficSignArray[1] = false;
+    cout << "==============can't turn left sign found==============" << endl;
     //countForward++;
   }
   /*
@@ -122,6 +128,7 @@ array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO) {
     if (fabs(contourArea(contours2[i])) < 100 || !isContourConvex(approx2))
       continue;
     if (approx2.size() == 4) {
+      cout << "found the square for the sign" << endl;
       Rect br = boundingRect(contours2[i]);
       Mat full_sign(croppedImage2, br);
 
@@ -134,9 +141,10 @@ array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO) {
 
       inRange(cut_image, Scalar(80, 0, 0), Scalar(130, 255, 255), cut_image);
 
-      if (VIDEO)
+      if (VIDEO){
         imshow("cut sign", cut_image);
 
+      }
       try {
         DetectBlueArea(cut_image, VERBOSE);
       } catch (...) {
