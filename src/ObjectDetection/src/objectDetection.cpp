@@ -279,7 +279,7 @@ Mat getInterval(Mat img, string color){
     inRange(hsvImg, Scalar(30, 80, 125), Scalar(55, 255, 255), intervalOutput);
   }
   else if(color == "red"){ //red
-    inRange(hsvImg, Scalar(0, 133, 83), Scalar(8, 187, 255), intervalOutput);
+    inRange(hsvImg, Scalar(149, 121, 131), Scalar(179, 198, 247), intervalOutput);
   }
   return intervalOutput;
 }
