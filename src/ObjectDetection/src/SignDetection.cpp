@@ -59,32 +59,33 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE , int BLUEINSIGN) {
 
   // Logic to comparing the white erea
   if (WhiteInLeft > WhiteInRight && WhiteInLeft - WhiteInRight > BLUEINSIGN &&
-      WhiteInLeft >= WhiteInTop){//&& WhiteInTop == 0) {
-    //trafficSignArray[2] = false;
+      WhiteInLeft >= WhiteInTop &&  WhiteInRight + WhiteInLeft > 1000){//&& WhiteInTop == 0) {
+    trafficSignArray[2] = false;
+    cout << "==============can't turn right sign found==============" << endl;
 
-    countRight++;
+    //countRight++;
   } else if (WhiteInRight > WhiteInLeft && WhiteInRight - WhiteInLeft > BLUEINSIGN &&
-             WhiteInRight >= WhiteInTop){//&& WhiteInTop == 0) {
-    //trafficSignArray[0] = false;
-    countleft++;
+             WhiteInRight >= WhiteInTop && WhiteInRight + WhiteInLeft > 1000){//&& WhiteInTop == 0) {
+    trafficSignArray[0] = false;
+    cout << "==============can't turn left sign found==============" << endl;
+    //countleft++;
   }
-  /*
+  /* 
   else if (WhiteInRight != 0 && WhiteInLeft != 0 && WhiteInTop > 400) {
     trafficSignArray[1] = false;
     cout << "==============can't go forward sign found==============" << endl;
     //countForward++;
   }
-  */
-  if (countRight > 3) {
+  /*
+  if (countRight > 1) {
     trafficSignArray[2] = false;
     if (VERBOSE)
-      cout << "==============can't turn right sign found==============" << endl;
+      cout << "can't turn right sign found" << endl;
     // Restart the counts
     countForward = 0;
     countleft = 0;
     countRight = 0;
   }
-  /*
   if (countForward > 1) {
     trafficSignArray[1] = false;
     if (VERBOSE)
@@ -94,16 +95,16 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE , int BLUEINSIGN) {
     countleft = 0;
     countRight = 0;
   }
-  */
-  if (countleft > 3) {
+  if (countleft > 1) {
     trafficSignArray[0] = false;
     if (VERBOSE)
-      cout << "==============can't turn left sign found==============" << endl;
+      cout << "can't turn left sign found" << endl;
     // Restart the counts
     countForward = 0;
     countleft = 0;
     countRight = 0;
   }
+  */
 }
 
 Mat GetCroppedImage(Mat img) {
@@ -150,7 +151,9 @@ array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO, int BLUEINSIGN)
 
       }
       try {
-        DetectBlueArea(cut_image, VERBOSE, BLUEINSIGN);
+        if(trafficSignArray[0] && trafficSignArray[2]){
+          DetectBlueArea(cut_image, VERBOSE, BLUEINSIGN);
+        }
       } catch (...) {
         if (VERBOSE)
           cout << "something bad happend" << endl;
