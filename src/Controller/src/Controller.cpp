@@ -147,6 +147,16 @@ int32_t main(int32_t argc, char **argv) {
       od4.send(pedalReq);
     });
 
+    od4.dataTrigger(2006, [&od4, &steerReq](cluon::data::Envelope &&envelope) {
+      CalibrateSteering calibrateSteering = cluon::extractMessage<CalibrateSteering>(std::move(envelope));
+      if (calibrateSteering.CalibrateSteeringAngle() != 0) {
+        steerReq.groundSteering(calibrateSteering.CalibrateSteeringAngle());
+        od4.send(steerReq);
+        std::cout << "Calibrate Steering Angle: " << calibrateSteering.CalibrateSteeringAngle() << std::endl;
+      }
+    });
+
+
     while (od4.isRunning()) {
     }
   }

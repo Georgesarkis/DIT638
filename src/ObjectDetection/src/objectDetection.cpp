@@ -21,13 +21,12 @@ using namespace cv;
 ShapeDetector ssd;
 leadCarScan carScan;
 
-bool StopSignRed(Mat img, vector<Point> contour, bool VIDEO);
 int CountWhitePixels(Mat img);
 string leadCarStatus(double areaOfContour);
 Mat getInterval(Mat img, string color);
-array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO);
+array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO , int BLUEINSIGN);
 float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &counter, bool &gotNewDataFromLeft, int &falseCounter);
-bool stopSignRed( vector<Point> contour,Mat img , bool VIDEO);
+bool stopSignRed( vector<Point> contour,Mat img , bool VIDEO , int AMOUNTOFRED);
 
 // GET ULTRASONIC/IR-SENSOR VALUES:
 const int MAXCOUNT = 4; //was 3
@@ -56,6 +55,9 @@ int32_t main(int32_t argc, char **argv) {
         const uint16_t MISSEDSIGNS{static_cast<uint16_t>(stoi(commandlineArguments["missed"]))};
         const double MINAREA{static_cast<double>(stod(commandlineArguments["minarea"]))};
         const uint16_t LOOKLEFT{static_cast<uint16_t>(stoi(commandlineArguments["look"]))};
+        const uint16_t AMOUNTOFRED{static_cast<uint16_t>(stoi(commandlineArguments["red"]))};
+        const uint16_t BLUEINSIGN{static_cast<uint16_t>(stoi(commandlineArguments["blue"]))};
+        const bool ENABLECALIBRATION{commandlineArguments.count("calib") != 0};
 
 
         if (sharedMemory && sharedMemory->valid()) { 
@@ -96,7 +98,9 @@ int32_t main(int32_t argc, char **argv) {
             TrafficRules trafficSignRules;
             opendlv::proxy::PedalPositionRequest pedalReq;
 
+            leadCarScan leadCar;
             DriveMode driveMode;
+            CalibrateSteering calibrateSteering;
             LeadCarDistance leadCarDistance;
             InstructionMode instructionMode;
             instructionMode.directionAllowed(false);
@@ -125,13 +129,16 @@ int32_t main(int32_t argc, char **argv) {
                 Mat orangeInputImage = getInterval(img, "orange");
                 
                 if(mode == 0){
-                    trafficRules = ShapeDetection(img, VERBOSE, VIDEO);
+                    trafficRules = ShapeDetection(img, VERBOSE, VIDEO, BLUEINSIGN);
                     
                     //Follow lead car:
                     areaOfContour = carScan.findLeadCar(orangeInputImage , VIDEO);
                     if(areaOfContour > 1000){
                         leadCarSeen = true;
-
+                        if(ENABLECALIBRATION){
+                            calibrateSteering.CalibrateSteeringAngle(leadCar.CalibrateSteeringAngle(areaOfContour, orangeInputImage ,VERBOSE));
+                            od4.send(calibrateSteering);
+                        }
                         cout << "areaOfContour for the lead car: " << areaOfContour << endl;
                         distance = leadCarStatus(areaOfContour); 
                         leadCarDistance.distance(distance);
@@ -157,7 +164,7 @@ int32_t main(int32_t argc, char **argv) {
 
                       vector<Point> contour = ssd.getBiggestOctagon(grayImg);
 
-                      bool red = stopSignRed(contour, img, VIDEO);
+                      bool red = stopSignRed(contour, img, VIDEO, AMOUNTOFRED);
                       
                       //Point pt = ssd.getCenter(contour);
                       double contArea = ssd.getArea(contour); //was area
@@ -199,15 +206,11 @@ int32_t main(int32_t argc, char **argv) {
                         runOnce = false;
                     }
                     if (amountOfCars == 0) {
-                        
-                        //cout << "Cars 0, entered drive out of intersection" << endl;
-                        
+                        //Allow car to drive out of intersection:
                         instructionMode.directionAllowed(true);
                         od4.send(instructionMode);
-
-                        //break;
                     } else {
-                        //  **Credit: --->this code is based on example_control code, start*
+                        //  **Credit: --->some of this code is based on example_control code, start*
                         //cout << "in else for count passing cars" << endl;                        
                         auto onDistanceReading{
                           [&od4, &gotNewDataFromLeft,&leftSensorValue, &frontSensorValue,&frontTotalSum, &frontCounter, &leftCounter,&leftTotalSum, &falseCounter](cluon::data::Envelope &&envelope) {
@@ -221,11 +224,10 @@ int32_t main(int32_t argc, char **argv) {
                             else if (senderStamp == 1) {
                                 leftSensorValue = getSensorData(msg.distance(), 1, leftTotalSum, leftCounter,gotNewDataFromLeft, falseCounter);
                             }
-
                           }
                         };
                         od4.dataTrigger(opendlv::proxy::DistanceReading::ID(),onDistanceReading);
-                        //  **Credit: --->this code is based on example_control code, end*
+                        //  **Credit: --->some of this code is based on example_control code, end*
 
                         // count how many cars pass by:
                         amountOfCars = ccars.countPassingCars(frontSensorValue, amountOfCars, 0, blackInputImage);
@@ -264,7 +266,6 @@ string leadCarStatus(double areaOfContour){
   return distance;
 }
 
-
 Mat getInterval(Mat img, string color){
   Mat hsvImg;
   cvtColor(img, hsvImg, COLOR_BGR2HSV);
@@ -302,8 +303,7 @@ float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &
     }
     return frontValue;
   }
-
-  if (sendStamp == 1) { // left sensor
+  else if (sendStamp == 1) { // left sensor
     float leftValue = distanceMessage;
     gotNewDataFromLeft = true;
     falseCounter = 0;
@@ -321,10 +321,10 @@ float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &
     }
     return leftValue;
   }
-  return -1;
+  return 1;
 }
 
-bool stopSignRed(vector<Point> contour , Mat img  , bool VIDEO){
+bool stopSignRed(vector<Point> contour , Mat img  , bool VIDEO, int  AMOUNTOFRED){
     Mat frame_thresholdred;
     Rect br = boundingRect(contour);
     Mat FullStopSign(img, br);
@@ -332,10 +332,10 @@ bool stopSignRed(vector<Point> contour , Mat img  , bool VIDEO){
     int WhitePixelsInStopSign = CountWhitePixels(frame_thresholdred);
 
     cout << "area of red" << WhitePixelsInStopSign << endl;
-    if(VIDEO && WhitePixelsInStopSign > 1000){
+    if(VIDEO && WhitePixelsInStopSign > AMOUNTOFRED){
       imshow("FullStopSign" , FullStopSign);
     }
-    if(WhitePixelsInStopSign > 500){
+    if(WhitePixelsInStopSign > AMOUNTOFRED){
       return true;
     }
     else{
