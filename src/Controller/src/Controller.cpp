@@ -33,6 +33,9 @@ int32_t main(int32_t argc, char **argv) {
     bool TurnLeft, TurnRight, GoForward;
     bool directionInstructionMode = false;
 
+    double lastCalib = 0;
+
+
     //: recive trafic sign rules.
     od4.dataTrigger(2003, [&TurnLeft, &TurnRight, &GoForward](cluon::data::Envelope &&envelope) {
       cout << "RECEIVED TRAFFIC SIGN MESSAGE" << endl;
@@ -83,7 +86,7 @@ int32_t main(int32_t argc, char **argv) {
 
         pedalReq.position(SPEED);
         std::string direction = receivedMsg.direction();
-        float steer = direction == "left" ? leftangle : direction == "right" : rightangle ? 0.0f;
+        float steer = direction == "left" ? leftangle : direction == "right" ? rightangle ? 0.0f;
         //cout << "SPEED: " << pedalReq.position() << endl;
         steerReq.groundSteering(steer);
         cout << "STEER: " << steerReq.groundSteering() << endl;
@@ -146,8 +149,8 @@ int32_t main(int32_t argc, char **argv) {
       }
       od4.send(pedalReq);
     });
-    double lastCalib = 0;
-    od4.dataTrigger(2006, [&od4, &steerReq](cluon::data::Envelope &&envelope) {
+
+    od4.dataTrigger(2006, [&od4, &steerReq, &lastCalib](cluon::data::Envelope &&envelope) {
       CalibrateSteering calibrateSteering = cluon::extractMessage<CalibrateSteering>(std::move(envelope));
       if (calibrateSteering.CalibrateSteeringAngle() != lastCalib) {
         lastCalib = calibrateSteering.CalibrateSteeringAngle();

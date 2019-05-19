@@ -59,33 +59,32 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE , int BLUEINSIGN) {
 
   // Logic to comparing the white erea
   if (WhiteInLeft > WhiteInRight && WhiteInLeft - WhiteInRight > BLUEINSIGN &&
-      WhiteInLeft >= WhiteInTop &&  WhiteInRight + WhiteInLeft > 1000){//&& WhiteInTop == 0) {
-    trafficSignArray[2] = false;
-    cout << "==============can't turn right sign found==============" << endl;
+      WhiteInLeft >= WhiteInTop){//&& WhiteInTop == 0) {
+    //trafficSignArray[2] = false;
 
-    //countRight++;
+    countRight++;
   } else if (WhiteInRight > WhiteInLeft && WhiteInRight - WhiteInLeft > BLUEINSIGN &&
-             WhiteInRight >= WhiteInTop && WhiteInRight + WhiteInLeft > 1000){//&& WhiteInTop == 0) {
-    trafficSignArray[0] = false;
-    cout << "==============can't turn left sign found==============" << endl;
-    //countleft++;
+             WhiteInRight >= WhiteInTop){//&& WhiteInTop == 0) {
+    //trafficSignArray[0] = false;
+    countleft++;
   }
-  /* 
+  /*
   else if (WhiteInRight != 0 && WhiteInLeft != 0 && WhiteInTop > 400) {
     trafficSignArray[1] = false;
     cout << "==============can't go forward sign found==============" << endl;
     //countForward++;
   }
-  /*
-  if (countRight > 1) {
+  */
+  if (countRight > 3) {
     trafficSignArray[2] = false;
     if (VERBOSE)
-      cout << "can't turn right sign found" << endl;
+      cout << "==============can't turn right sign found==============" << endl;
     // Restart the counts
     countForward = 0;
     countleft = 0;
     countRight = 0;
   }
+  /*
   if (countForward > 1) {
     trafficSignArray[1] = false;
     if (VERBOSE)
@@ -95,16 +94,16 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE , int BLUEINSIGN) {
     countleft = 0;
     countRight = 0;
   }
-  if (countleft > 1) {
+  */
+  if (countleft > 3) {
     trafficSignArray[0] = false;
     if (VERBOSE)
-      cout << "can't turn left sign found" << endl;
+      cout << "==============can't turn left sign found==============" << endl;
     // Restart the counts
     countForward = 0;
     countleft = 0;
     countRight = 0;
   }
-  */
 }
 
 Mat GetCroppedImage(Mat img) {
