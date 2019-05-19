@@ -67,7 +67,7 @@ int32_t main(int32_t argc, char **argv) {
         //float leftSteerAngle = 0.11f;
         //float rightSteerAngle = -0.4f;
 
-        float forwardSteerAngle = -0.109f;
+        //float forwardSteerAngle = -0.109f;
         //uint16_t rightDelay = 3300;
         //uint16_t otherDirectionDelay = 1900;
         //uint16_t boostDelay = 5;
@@ -83,7 +83,7 @@ int32_t main(int32_t argc, char **argv) {
 
         pedalReq.position(SPEED);
         std::string direction = receivedMsg.direction();
-        float steer = direction == "left" ? leftangle : direction == "right" ? rightangle : forwardSteerAngle;
+        float steer = direction == "left" ? leftangle : rightangle;
         //cout << "SPEED: " << pedalReq.position() << endl;
         steerReq.groundSteering(steer);
         cout << "STEER: " << steerReq.groundSteering() << endl;

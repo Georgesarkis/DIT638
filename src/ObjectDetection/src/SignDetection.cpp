@@ -67,11 +67,14 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE , int BLUEINSIGN) {
   } else if (WhiteInRight > WhiteInLeft && WhiteInRight - WhiteInLeft > BLUEINSIGN &&
              WhiteInRight >= WhiteInTop ){//&& WhiteInTop == 0) {
     trafficSignArray[0] = false;
-    cout << "==============can't go forward sign found==============" << endl;
-    //countleft++;
-  } else if (WhiteInRight != 0 && WhiteInLeft != 0 && WhiteInTop > 400) {
-    trafficSignArray[1] = false;
     cout << "==============can't turn left sign found==============" << endl;
+    //countleft++;
+  }
+  trafficSignArray[1] = true;
+  /* 
+  else if (WhiteInRight != 0 && WhiteInLeft != 0 && WhiteInTop > 400) {
+    trafficSignArray[1] = false;
+    cout << "==============can't go forward sign found==============" << endl;
     //countForward++;
   }
   /*
