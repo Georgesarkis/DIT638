@@ -13,6 +13,7 @@ class SignDetection {
 public:
   std::array<bool, 3> ShapeDetection(cv::Mat img, bool VERBOSE, bool VIDEO);
   cv::Mat GetCroppedImage(cv::Mat img);
+  int CountWhitePixels(cv::Mat img);
 };
 
 #endif

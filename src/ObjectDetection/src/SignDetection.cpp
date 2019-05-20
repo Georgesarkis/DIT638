@@ -26,7 +26,7 @@ int CountWhitePixels(Mat img) {
   return all_pixels.size();
 }
 
-void DetectBlueArea(Mat full_sign, bool VERBOSE) {
+void DetectBlueArea(Mat full_sign, bool VERBOSE , int BLUEINSIGN) {
   // Right part of the image
   Mat image1(full_sign);
   Rect myROI1(0, 0, full_sign.size().width / 2,
@@ -58,20 +58,22 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE) {
   }
 
   // Logic to comparing the white erea
-  if (WhiteInLeft > WhiteInRight && WhiteInLeft - WhiteInRight > 100 &&
-      WhiteInLeft >= WhiteInTop ){//&& WhiteInTop == 0) {
+  if (WhiteInLeft > WhiteInRight && WhiteInLeft - WhiteInRight > BLUEINSIGN &&
+      WhiteInLeft >= WhiteInTop &&  WhiteInRight + WhiteInLeft > 1000){//&& WhiteInTop == 0) {
     trafficSignArray[2] = false;
     cout << "==============can't turn right sign found==============" << endl;
 
     //countRight++;
-  } else if (WhiteInRight > WhiteInLeft && WhiteInRight - WhiteInLeft > 100 &&
-             WhiteInRight >= WhiteInTop ){//&& WhiteInTop == 0) {
+  } else if (WhiteInRight > WhiteInLeft && WhiteInRight - WhiteInLeft > BLUEINSIGN &&
+             WhiteInRight >= WhiteInTop && WhiteInRight + WhiteInLeft > 1000){//&& WhiteInTop == 0) {
     trafficSignArray[0] = false;
-    cout << "==============can't go forward sign found==============" << endl;
-    //countleft++;
-  } else if (WhiteInRight != 0 && WhiteInLeft != 0 && WhiteInTop > 400) {
-    trafficSignArray[1] = false;
     cout << "==============can't turn left sign found==============" << endl;
+    //countleft++;
+  }
+  /* 
+  else if (WhiteInRight != 0 && WhiteInLeft != 0 && WhiteInTop > 400) {
+    trafficSignArray[1] = false;
+    cout << "==============can't go forward sign found==============" << endl;
     //countForward++;
   }
   /*
@@ -114,7 +116,7 @@ Mat GetCroppedImage(Mat img) {
   return croppedImage2;
 }
 
-array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO) {
+array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO, int BLUEINSIGN) {
   Mat bw, grayImg;
   Mat croppedImage2 = GetCroppedImage(img);
   cvtColor(croppedImage2, grayImg, COLOR_BGR2GRAY);
@@ -149,7 +151,9 @@ array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO) {
 
       }
       try {
-        DetectBlueArea(cut_image, VERBOSE);
+        if(trafficSignArray[0] && trafficSignArray[2]){
+          DetectBlueArea(cut_image, VERBOSE, BLUEINSIGN);
+        }
       } catch (...) {
         if (VERBOSE)
           cout << "something bad happend" << endl;
