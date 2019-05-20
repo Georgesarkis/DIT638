@@ -63,17 +63,17 @@ int32_t main(int32_t argc, char **argv) {
         if (sharedMemory && sharedMemory->valid()) { 
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
             
-            int mode = 1; //should be 0
+            int mode = 0; //should be 0
 
             od4.dataTrigger(2005, [&od4, &mode](cluon::data::Envelope &&envelope) {
               DriveMode currentDriveMode = cluon::extractMessage<DriveMode>(std::move(envelope));
-              //mode = currentDriveMode.mode();
+              mode = currentDriveMode.mode();
             });
 
             countCars ccars;
 
             ////**COUNTING CARS:**////
-            int amountOfCars = 3; // should be 0, only 3 for testing count passing cars
+            int amountOfCars = 0; // should be 0, only 3 for testing count passing cars
             int leftCar = 0;
             int frontCar = 0;
             int rightCar = 0;
@@ -197,7 +197,7 @@ int32_t main(int32_t argc, char **argv) {
                         cout << "ran FIND FRONT RIGHT cars" << endl;
                         frontCar = ccars.findCars(greenInputImage, 1, frontCar); //needs to run after car has stopped fully
                         rightCar = ccars.findCars(greenInputImage, 2, rightCar);  //needs to run after car has stopped fully
-                        //amountOfCars = leftCar + frontCar + rightCar;
+                        amountOfCars = leftCar + frontCar + rightCar;
                         runOnce = false;
                     }
                     if (amountOfCars == 0) {
