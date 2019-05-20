@@ -326,7 +326,7 @@ bool stopSignRed(vector<Point> contour , Mat img  , bool VIDEO, int  AMOUNTOFRED
     frame_thresholdred = getInterval(FullStopSign, "red");
     int WhitePixelsInStopSign = CountWhitePixels(frame_thresholdred);
 
-    cout << "area of red" << WhitePixelsInStopSign << endl;
+    //cout << "area of red" << WhitePixelsInStopSign << endl;
     if(VIDEO && WhitePixelsInStopSign > AMOUNTOFRED){
       imshow("FullStopSign" , FullStopSign);
     }

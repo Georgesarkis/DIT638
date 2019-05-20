@@ -67,7 +67,7 @@ int countCars::findCars(Mat image, int side, int prevAmount) { // count the amou
     for (size_t i = 0; i < foundContours.size(); i++) {
       // cout << "           contour area: " << contourArea(foundContours[i]) << endl;
       if (side == 0 && !enteredLeft && prevAmount == 0) { // left cars
-        cout << "           contour area LEFT: " << contourArea(foundContours[i]) << endl;        
+        //cout << "           contour area LEFT: " << contourArea(foundContours[i]) << endl;        
         if (contourArea(foundContours[i]) > 100 && contourArea(foundContours[i]) < 2000) { //maybe change to 740
           cout << "----->left car found" << endl;
           enteredLeft = true;
@@ -78,9 +78,9 @@ int countCars::findCars(Mat image, int side, int prevAmount) { // count the amou
         }
       }
       if (side == 1 && !enteredFront && prevAmount == 0) { // front cars
-        if (contourArea(foundContours[i]) > 740 && contourArea(foundContours[i]) < 2200) { // change these numbers!!! was 450 to 650 for both front and right
-          cout << "----->front car found" << endl;
-          cout << "           contour area FRONT: " << contourArea(foundContours[i]) << endl;        
+        if (contourArea(foundContours[i]) > 880 && contourArea(foundContours[i]) < 2200) { // change these numbers!!! was 450 to 650 for both front and right
+          cout << "----->front car found at " << contourArea(foundContours[i]) << endl;
+          //cout << "           contour area FRONT: " << contourArea(foundContours[i]) << endl;        
           enteredFront = true;
           return 1;
         }
@@ -90,8 +90,8 @@ int countCars::findCars(Mat image, int side, int prevAmount) { // count the amou
       }
       if (side == 2 && !enteredRight && prevAmount == 0) { // right cars  //for this we should move the green note forward on the car
         if (contourArea(foundContours[i]) > 740 && contourArea(foundContours[i]) < 3500) { // change these numbers!!!
-          cout << "----->right car found" << endl;
-          cout << "           contour area RIGHT: " << contourArea(foundContours[i]) << endl;        
+          cout << "----->right car found at " << contourArea(foundContours[i]) << endl;
+          //cout << "           contour area RIGHT: " << contourArea(foundContours[i]) << endl;        
           enteredRight = true;
           return 1;
         }
@@ -120,7 +120,7 @@ int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, i
   }
 
   if (sensorType == 0) { // front ultrasonic
-    cout << "FRONT SENSOR DISTANCE " << sensorDistance << " cars rly passed: " << carReallyPassed << endl;
+    //cout << "FRONT SENSOR DISTANCE " << sensorDistance << " cars rly passed: " << carReallyPassed << endl;
     if ((sensorDistance < 0.50 && sensorDistance >= 0.03) || (sensorDistance > 0.61 && sensorDistance < 0.7)) { //maybe change to 0.7 or something
       
       carReallyPassed++;
