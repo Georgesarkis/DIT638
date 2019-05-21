@@ -86,7 +86,7 @@ int32_t main(int32_t argc, char **argv) {
 
         pedalReq.position(SPEED);
         std::string direction = receivedMsg.direction();
-        float steer = direction == "left" ? leftangle : direction == "right" ? rightangle ? 0.0f;
+        float steer = direction == "left" ? leftangle : direction == "right" ? rightangle : 0.0f;
         //cout << "SPEED: " << pedalReq.position() << endl;
         steerReq.groundSteering(steer);
         cout << "STEER: " << steerReq.groundSteering() << endl;

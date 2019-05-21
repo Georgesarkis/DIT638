@@ -82,7 +82,7 @@ bool ShapeDetector::followStopsign(){
   //: Returns true ( signaling that we are still following a stopsign) if we haven't seen it in a while
   if(number_of_missed_signs >= max_number_of_missed_signs){
     Threshhold_reached = true;
-    cout << "-- Threshhold reached , stoping car ---- " << endl;
+    cout << "-- Threshhold reached , stopping car ---- " << endl;
     return false;
   }else{
     return true;

@@ -42,7 +42,7 @@ findContoursInROI(int xC, int yC, int widthC, int heightC, Mat image);
 int countCars::findCars(Mat image, int side, int prevAmount) { // count the amount of contours in this left rectangle and
   
   if (side == 0) { // left side roi
-    cout << "in find left car" << endl;
+    //cout << "in find left car" << endl;
     x = 0;
     y = 0;
     width = 150; //was 130

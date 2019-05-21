@@ -29,7 +29,7 @@ float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &
 bool stopSignRed( vector<Point> contour,Mat img , bool VIDEO , int AMOUNTOFRED);
 
 // GET ULTRASONIC/IR-SENSOR VALUES:
-const int MAXCOUNT = 4; //was 3
+const int MAXCOUNT = 3; //was 3
 float frontSensorData[MAXCOUNT];
 float leftSensorData[MAXCOUNT];
 
@@ -146,7 +146,7 @@ int32_t main(int32_t argc, char **argv) {
                     
                     if(!leadCarSeen && lookLeft < LOOKLEFT){
                       //Find left car:
-                      cout << "entered find left car" << endl;
+                      //cout << "entered find left car" << endl;
                       leftCar = ccars.findCars(greenInputImage, 0, leftCar);
                       amountOfCars = leftCar;
                       lookLeft++;
@@ -194,7 +194,7 @@ int32_t main(int32_t argc, char **argv) {
 
                 } else {  //2nd mode
                     if(runOnce){
-                        cout << "ran FIND FRONT RIGHT cars" << endl;
+                        //cout << "ran FIND FRONT RIGHT cars" << endl;
                         frontCar = ccars.findCars(greenInputImage, 1, frontCar); //needs to run after car has stopped fully
                         rightCar = ccars.findCars(greenInputImage, 2, rightCar);  //needs to run after car has stopped fully
                         amountOfCars = leftCar + frontCar + rightCar;
@@ -246,7 +246,7 @@ int32_t main(int32_t argc, char **argv) {
 
 string leadCarStatus(double areaOfContour){
   string distance;
-  double minAcceptableArea = 3000; //need to look all these numbers up!
+  double minAcceptableArea = 3000;
   double maxAcceptableArea = 3500;
   double minOutOfBounds = 200;
   if(areaOfContour >= minAcceptableArea && areaOfContour <= maxAcceptableArea){
