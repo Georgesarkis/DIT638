@@ -86,7 +86,7 @@ int32_t main(int32_t argc, char **argv) {
 
         pedalReq.position(SPEED);
         std::string direction = receivedMsg.direction();
-        float steer = direction == "left" ? leftangle : direction == "right" ? rightangle ? 0.0f;
+        float steer = direction == "left" ? leftangle : direction == "right" ? rightangle : 0.0f;
         //cout << "SPEED: " << pedalReq.position() << endl;
         steerReq.groundSteering(steer);
         cout << "STEER: " << steerReq.groundSteering() << endl;
@@ -152,11 +152,22 @@ int32_t main(int32_t argc, char **argv) {
 
     od4.dataTrigger(2006, [&od4, &steerReq, &lastCalib](cluon::data::Envelope &&envelope) {
       CalibrateSteering calibrateSteering = cluon::extractMessage<CalibrateSteering>(std::move(envelope));
-      if (calibrateSteering.CalibrateSteeringAngle() != lastCalib) {
-        lastCalib = calibrateSteering.CalibrateSteeringAngle();
-        steerReq.groundSteering(calibrateSteering.CalibrateSteeringAngle());
+      if (calibrateSteering.CalibrateSteeringAngle() < 0) {
+        lastCalib = lastCalib - 0.01;
+        steerReq.groundSteering(lastCalib);
         od4.send(steerReq);
-        std::cout << "Calibrate Steering Angle: " << calibrateSteering.CalibrateSteeringAngle() << std::endl;
+        std::cout << "Calibrate Steering Angle: " << lastCalib << std::endl;
+      }
+      else if(calibrateSteering.CalibrateSteeringAngle() > 0){
+        lastCalib = lastCalib + 0.1;
+        steerReq.groundSteering(lastCalib);
+        od4.send(steerReq);
+        std::cout << "Calibrate Steering Angle: " << lastCalib << std::endl;
+      }else{
+        lastCalib = 0;
+        steerReq.groundSteering(lastCalib);
+        od4.send(steerReq);
+        std::cout << "Calibrate Steering Angle: " << lastCalib << std::endl;
       }
     });
 
