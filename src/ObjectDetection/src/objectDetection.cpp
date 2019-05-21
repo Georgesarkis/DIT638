@@ -29,7 +29,7 @@ float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &
 bool stopSignRed( vector<Point> contour,Mat img , bool VIDEO , int AMOUNTOFRED);
 
 // GET ULTRASONIC/IR-SENSOR VALUES:
-const int MAXCOUNT = 4; //was 3
+const int MAXCOUNT = 3; //was 3
 float frontSensorData[MAXCOUNT];
 float leftSensorData[MAXCOUNT];
 
@@ -63,7 +63,7 @@ int32_t main(int32_t argc, char **argv) {
         if (sharedMemory && sharedMemory->valid()) { 
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
             
-            int mode = 0;
+            int mode = 0; //should be 0
 
             od4.dataTrigger(2005, [&od4, &mode](cluon::data::Envelope &&envelope) {
               DriveMode currentDriveMode = cluon::extractMessage<DriveMode>(std::move(envelope));
@@ -80,7 +80,6 @@ int32_t main(int32_t argc, char **argv) {
             // ultrasonic:
             bool gotNewDataFromLeft;
             int falseCounter = 0;
-            // float average = 0;
             float frontTotalSum = 0;
             float leftTotalSum = 0;
             int frontCounter = 0;
@@ -139,7 +138,7 @@ int32_t main(int32_t argc, char **argv) {
                             calibrateSteering.CalibrateSteeringAngle(leadCar.CalibrateSteeringAngle(areaOfContour, orangeInputImage ,VERBOSE));
                             od4.send(calibrateSteering);
                         }
-                        cout << "areaOfContour for the lead car: " << areaOfContour << endl;
+                        //cout << "areaOfContour for the lead car: " << areaOfContour << endl;
                         distance = leadCarStatus(areaOfContour); 
                         leadCarDistance.distance(distance);
                         od4.send(leadCarDistance);
@@ -147,10 +146,10 @@ int32_t main(int32_t argc, char **argv) {
                     
                     if(!leadCarSeen && lookLeft < LOOKLEFT){
                       //Find left car:
-                        cout << "entered find left car" << endl;
-                        leftCar = ccars.findCars(greenInputImage, 0, leftCar);
-                        amountOfCars = leftCar;
-                        lookLeft++;
+                      //cout << "entered find left car" << endl;
+                      leftCar = ccars.findCars(greenInputImage, 0, leftCar);
+                      amountOfCars = leftCar;
+                      lookLeft++;
                     }
 
                     Mat image(img);
@@ -166,7 +165,6 @@ int32_t main(int32_t argc, char **argv) {
 
                       bool red = stopSignRed(contour, img, VIDEO, AMOUNTOFRED);
                       
-                      //Point pt = ssd.getCenter(contour);
                       double contArea = ssd.getArea(contour); //was area
 
                       if(VERBOSE){
@@ -194,12 +192,9 @@ int32_t main(int32_t argc, char **argv) {
                     //TODO add linearacceleration
                     //TODO add calibration
 
-                    //Find left car:
-                    //leftCar = ccars.findCars(greenInputImage, 0, leftCar);
-                    //amountOfCars = leftCar;
                 } else {  //2nd mode
                     if(runOnce){
-                        cout << "ran FIND FRONT RIGHT cars" << endl;
+                        //cout << "ran FIND FRONT RIGHT cars" << endl;
                         frontCar = ccars.findCars(greenInputImage, 1, frontCar); //needs to run after car has stopped fully
                         rightCar = ccars.findCars(greenInputImage, 2, rightCar);  //needs to run after car has stopped fully
                         amountOfCars = leftCar + frontCar + rightCar;
@@ -211,11 +206,11 @@ int32_t main(int32_t argc, char **argv) {
                         od4.send(instructionMode);
                     } else {
                         //  **Credit: --->some of this code is based on example_control code, start*
-                        //cout << "in else for count passing cars" << endl;                        
                         auto onDistanceReading{
                           [&od4, &gotNewDataFromLeft,&leftSensorValue, &frontSensorValue,&frontTotalSum, &frontCounter, &leftCounter,&leftTotalSum, &falseCounter](cluon::data::Envelope &&envelope) {
                             auto msg = cluon::extractMessage<opendlv::proxy::DistanceReading>(std::move(envelope));
                             const uint16_t senderStamp = envelope.senderStamp();
+                            
                             gotNewDataFromLeft = false;
                               
                             if (senderStamp == 0) {
@@ -251,7 +246,7 @@ int32_t main(int32_t argc, char **argv) {
 
 string leadCarStatus(double areaOfContour){
   string distance;
-  double minAcceptableArea = 3000; //need to look all these numbers up!
+  double minAcceptableArea = 3000;
   double maxAcceptableArea = 3500;
   double minOutOfBounds = 200;
   if(areaOfContour >= minAcceptableArea && areaOfContour <= maxAcceptableArea){
@@ -331,7 +326,7 @@ bool stopSignRed(vector<Point> contour , Mat img  , bool VIDEO, int  AMOUNTOFRED
     frame_thresholdred = getInterval(FullStopSign, "red");
     int WhitePixelsInStopSign = CountWhitePixels(frame_thresholdred);
 
-    cout << "area of red" << WhitePixelsInStopSign << endl;
+    //cout << "area of red" << WhitePixelsInStopSign << endl;
     if(VIDEO && WhitePixelsInStopSign > AMOUNTOFRED){
       imshow("FullStopSign" , FullStopSign);
     }
