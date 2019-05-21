@@ -170,7 +170,7 @@ int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, i
   if (foundContours.size() >= 1) {
     for (size_t i = 0; i < foundContours.size(); i++) {
       //cout << "CAMERA contour: " << contourArea(foundContours[i]) << endl;
-      if (contourArea(foundContours[i]) > 2 && contourArea(foundContours[i]) < 650) { // changed from 60 to 20,from 20 to 2
+      if (contourArea(foundContours[i]) > 20 && contourArea(foundContours[i]) < 650) { // changed from 60 to 20,from 20 to 2
         if (currentAmountOfCars > 0 && !carPassed) {
           if (camTimeCounter > minTime && timeCounter > minTime) {
             currentAmountOfCars--;

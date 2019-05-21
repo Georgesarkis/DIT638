@@ -138,7 +138,7 @@ int32_t main(int32_t argc, char **argv) {
                             calibrateSteering.CalibrateSteeringAngle(leadCar.CalibrateSteeringAngle(areaOfContour, orangeInputImage ,VERBOSE));
                             od4.send(calibrateSteering);
                         }
-                        cout << "areaOfContour for the lead car: " << areaOfContour << endl;
+                        //cout << "areaOfContour for the lead car: " << areaOfContour << endl;
                         distance = leadCarStatus(areaOfContour); 
                         leadCarDistance.distance(distance);
                         od4.send(leadCarDistance);
