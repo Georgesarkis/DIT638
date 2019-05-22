@@ -9,7 +9,7 @@
 
 class countCars {
 
-  int x; // do these need to be here if they are only used inside the class?
+  int x; 
   int y;
   int width;
   int height;
@@ -18,10 +18,8 @@ class countCars {
 
 public:
   int findCars(cv::Mat image, int side, int prevAmount);
-  int countPassingCars(float sensorDistance, int currentAmountOfCars,
-                       int sensorType, cv::Mat image);
-  std::vector<std::vector<cv::Point>>
-  findContoursInROI(int xC, int yC, int widthC, int heightC, cv::Mat image);
+  int countPassingCars(float sensorDistance, int currentAmountOfCars, int sensorType, cv::Mat image);
+  std::vector<std::vector<cv::Point>> findContoursInROI(int xC, int yC, int widthC, int heightC, cv::Mat image);
 };
 
 #endif

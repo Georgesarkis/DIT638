@@ -17,7 +17,6 @@ int height;
 bool carPassed = false;
 bool carPassedLeft = false;
 bool carPassedFront = false;
-// bool onpc = false;
 
 bool enteredFront = false;
 bool enteredRight = false;
@@ -29,46 +28,45 @@ int camTimeCounter = minTime + 1;
 int leftTimeCounter = minTime + 1;
 float previousSensorData = 0; 
 
-int carReallyPassed = 0; //added now
+int carReallyPassed = 0;
 
 bool carOnCamera = false;
 int carFound;
 
-std::vector<std::vector<cv::Point>> foundContours;
-std::vector<std::vector<cv::Point>>
-findContoursInROI(int xC, int yC, int widthC, int heightC, Mat image);
+vector<vector<Point>> foundContours;
+vector<vector<Point>> findContoursInROI(int xC, int yC, int widthC, int heightC, Mat image);
 
-// ****METHOD:
-int countCars::findCars(Mat image, int side, int prevAmount) { // count the amount of contours in this left rectangle and
+// ****METHOD: counts how many cars are in front of our car in the intersection by splitting images into different regions of interest
+int countCars::findCars(Mat image, int side, int prevAmount) {
   
+  // determine which area of the image we are interested in
   if (side == 0) { // left side roi
-    //cout << "in find left car" << endl;
     x = 0;
     y = 0;
-    width = 150; //was 130
+    width = 150; 
     height = 324;
-  } else if (side == 1) { // middle/front roi
+  } else if (side == 1) { // front roi
     x = 0;
     y = 0;
     width = 260;
     height = 270;
   } else if (side == 2) { // right side roi
-    x = 385; //400
+    x = 385; 
     y = 0;
-    width = 255; //233
-    height = 324; //324
+    width = 255; 
+    height = 324; 
   } else {
     throw invalid_argument("no allowed side found");
   }
 
+  // Get contours for the image
   foundContours = findContoursInROI(x, y, width, height, image);
 
-  if (foundContours.size() >= 1) { // should remake this in a function for less code repetition maybe // (can wait for later tho)
+  // Check if any contour is of acceptable size, if so then return 1 so signal one car has been found
+  if (foundContours.size() >= 1) {
     for (size_t i = 0; i < foundContours.size(); i++) {
-      // cout << "           contour area: " << contourArea(foundContours[i]) << endl;
       if (side == 0 && !enteredLeft && prevAmount == 0) { // left cars
-        //cout << "           contour area LEFT: " << contourArea(foundContours[i]) << endl;        
-        if (contourArea(foundContours[i]) > 100 && contourArea(foundContours[i]) < 2000) { //maybe change to 740
+        if (contourArea(foundContours[i]) > 100 && contourArea(foundContours[i]) < 2000) {
           cout << "----->left car found" << endl;
           enteredLeft = true;
           return 1;
@@ -78,9 +76,8 @@ int countCars::findCars(Mat image, int side, int prevAmount) { // count the amou
         }
       }
       if (side == 1 && !enteredFront && prevAmount == 0) { // front cars
-        if (contourArea(foundContours[i]) > 880 && contourArea(foundContours[i]) < 2200) { // change these numbers!!! was 450 to 650 for both front and right
+        if (contourArea(foundContours[i]) > 880 && contourArea(foundContours[i]) < 2200) { 
           cout << "----->front car found at " << contourArea(foundContours[i]) << endl;
-          //cout << "           contour area FRONT: " << contourArea(foundContours[i]) << endl;        
           enteredFront = true;
           return 1;
         }
@@ -88,10 +85,9 @@ int countCars::findCars(Mat image, int side, int prevAmount) { // count the amou
           enteredFront = true;
         }
       }
-      if (side == 2 && !enteredRight && prevAmount == 0) { // right cars  //for this we should move the green note forward on the car
-        if (contourArea(foundContours[i]) > 740 && contourArea(foundContours[i]) < 3500) { // change these numbers!!!
+      if (side == 2 && !enteredRight && prevAmount == 0) { // right cars 
+        if (contourArea(foundContours[i]) > 740 && contourArea(foundContours[i]) < 3500) { 
           cout << "----->right car found at " << contourArea(foundContours[i]) << endl;
-          //cout << "           contour area RIGHT: " << contourArea(foundContours[i]) << endl;        
           enteredRight = true;
           return 1;
         }
@@ -104,11 +100,13 @@ int countCars::findCars(Mat image, int side, int prevAmount) { // count the amou
   return prevAmount;
 }
 
-// ****METHOD:
+// ****METHOD: takes sensor data and an image to check if a car has passed in front of our car or entered the intersection
 int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, int sensorType, Mat image) {
 
   carFound = 0; // for the camera
 
+  // make sure time counters dont become too large
+  //time counters are used to prevent the same car caught by several sensors and camera to be counted as several cars
   if (timeCounter > 500) {
     timeCounter = minTime + 1;
   }
@@ -119,9 +117,10 @@ int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, i
     leftTimeCounter = minTime + 1;
   }
 
+  //check if a car passed the front sensor, if it did we reset the time counter and until the count reaches 60 we wont increase the number
+  //of passed cars even if another sensor or camera noticed the car
   if (sensorType == 0) { // front ultrasonic
-    //cout << "FRONT SENSOR DISTANCE " << sensorDistance << " cars rly passed: " << carReallyPassed << endl;
-    if ((sensorDistance < 0.50 && sensorDistance >= 0.03) || (sensorDistance > 0.61 && sensorDistance < 0.7)) { //maybe change to 0.7 or something
+    if ((sensorDistance < 0.50 && sensorDistance >= 0.03) || (sensorDistance > 0.61 && sensorDistance < 0.7)) { 
       
       carReallyPassed++;
 
@@ -136,18 +135,15 @@ int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, i
         }
         carPassed = true;
       }
-
     }
     else{
         carReallyPassed = 0;
     }  
   } 
   else if (sensorType == 1) { // left-side ir sensor
-    // cout << "left SENSOR: " << sensorDistance << endl;
-    if (sensorDistance <= 0.31 && sensorDistance >= 0.045) { // make these variables
+    if (sensorDistance <= 0.31 && sensorDistance >= 0.045) { 
       if (currentAmountOfCars > 0 && !carPassed) {
         if (timeCounter < minTime || camTimeCounter < minTime || leftTimeCounter < minTime) {
-          //cout << "LEFT DONT count this car" << endl; 
           carPassed = true;
         } 
         else {
@@ -162,15 +158,16 @@ int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, i
 
   x = 0;
   y = 285;
-  width = 260; //210
+  width = 260; 
   height = 65;
 
+  // Get contours
   foundContours = findContoursInROI(x, y, width, height, image);
 
+  //Go through the contours, if any are of acceptable size and the timeCounter is not less than 60 we count it as a car passing
   if (foundContours.size() >= 1) {
     for (size_t i = 0; i < foundContours.size(); i++) {
-      //cout << "CAMERA contour: " << contourArea(foundContours[i]) << endl;
-      if (contourArea(foundContours[i]) > 20 && contourArea(foundContours[i]) < 650) { // changed from 60 to 20,from 20 to 2
+      if (contourArea(foundContours[i]) > 20 && contourArea(foundContours[i]) < 650) {
         if (currentAmountOfCars > 0 && !carPassed) {
           if (camTimeCounter > minTime && timeCounter > minTime) {
             currentAmountOfCars--;
@@ -189,7 +186,8 @@ int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, i
     }
   }
 
-  if ((sensorDistance > 0.65 || sensorDistance < 0.03) && (previousSensorData > 0.65 || previousSensorData < 0.03) && !carOnCamera && currentAmountOfCars > 0) {
+  //if we get too big or too small sensor data we set car passed to false to allow other cars to pass
+  if ((sensorDistance > 0.7 || sensorDistance < 0.03) && (previousSensorData > 0.65 || previousSensorData < 0.03) && !carOnCamera && currentAmountOfCars > 0) {
     carPassed = false;
   }
 
@@ -202,42 +200,24 @@ int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, i
   return currentAmountOfCars;
 }
 
-// ****METHOD:
-std::vector<std::vector<cv::Point>> countCars::findContoursInROI(int xC, int yC, int widthC, int heightC, Mat image) {
-  std::vector<std::vector<cv::Point>> contours;
+// ****METHOD: 
+vector<vector<Point>> countCars::findContoursInROI(int xC, int yC, int widthC, int heightC, Mat image) {
+  vector<vector<Point>> contours;
 
   Rect roiAreaRectangle(xC, yC, widthC, heightC);
   Mat roiImage = image(roiAreaRectangle); // get the region of interest of original image
 
   rectangle(image, roiAreaRectangle, Scalar(255), 1, 8, 0); // draw the rectangle for the area on the original picture
 
-  cv::findContours(roiImage, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+  findContours(roiImage, contours, RETR_TREE, CHAIN_APPROX_SIMPLE);
 
-  std::vector<std::vector<cv::Point>> contoursPoly(contours.size());
+  vector<vector<Point>> contoursPoly(contours.size());
 
-  std::vector<cv::Rect> boundRect(contours.size());
+  vector<Rect> boundRect(contours.size());
 
   for (size_t i = 0; i < contours.size(); i++) {
-    cv::approxPolyDP(contours[i], contoursPoly[i], 3, true);
-    boundRect[i] = cv::boundingRect(contoursPoly[i]);
+    approxPolyDP(contours[i], contoursPoly[i], 3, true);
+    boundRect[i] = boundingRect(contoursPoly[i]);
   }
   return contours;
 }
-
-/*
-    counting passing cars,
-        easy cases:
-            car on the right drives forward,    (ultrasonic)
-            car on the right turns left         (ir sensor)
-            car on the left turns right         (ir sensor)
-            car on the left drives forward      (ultrasonic)
-            car in front drives forward         (ir sensor)
-
-        medium cases: (might not be able to catch with sensor)
-            car in front drives left            (ultrasonic)    OK
-            car on the left turns left          (ultrasonic)    OK
-            car on right turns right            (ultrasonic)    OK
-
-        difficult cases: (wont be reached by sensor)
-            car in front drives right
-*/

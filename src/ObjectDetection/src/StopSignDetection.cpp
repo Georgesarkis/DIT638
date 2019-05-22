@@ -4,7 +4,6 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
-#include <mutex>
 
 using namespace cv;
 using namespace std;
@@ -16,7 +15,6 @@ public:
   int failed_frames = 0;
 
   string detect(const vector<Point> &input);
-  Point getCenter(const vector<Point> &input);
   double getArea(const vector<Point> &input);
   vector<Point> getBiggestOctagon(const Mat &image);
   void showAllShapes(const Mat &image);
@@ -27,6 +25,7 @@ public:
   bool followStopsign();
   bool stopSignLogic(bool red);
   void setArea(double &input);
+  bool same(double a, double b);
 
 };
 
@@ -67,9 +66,15 @@ bool ShapeDetector::lookForStopSign(bool red){
   return true;
 }
 
+//: function done by "Daniel Laügt" - Feb 6 '16 at 18:29
+bool ShapeDetector::same(double a, double b) {
+  return 
+  nextafter(a, numeric_limits<double>::lowest()) <= b && nextafter(a, numeric_limits<double>::max()) >= b;
+}
+
 bool ShapeDetector::followStopsign(){
   //: Counts the number of times we haven't seen the stopsign
-  if(area == 0.0){
+  if(same(area, 0.0) == true){
     cout << "Failed frame." << endl;
   }else if(area >= minStopSignArea){
     number_of_missed_signs = 0;
@@ -91,7 +96,6 @@ bool ShapeDetector::followStopsign(){
 
 //: logic for determinging if we are following the stopsign
 bool ShapeDetector::stopSignLogic(bool red) {
-
   if(followingStopSign){
     return followStopsign();
   }else{
@@ -99,15 +103,6 @@ bool ShapeDetector::stopSignLogic(bool red) {
   }
 
 }
-
-Point ShapeDetector::getCenter(const vector<Point> &input) {
-  Moments M = moments(input);
-  int X = static_cast<int>(M.m10 / M.m00);
-  int Y = static_cast<int>(M.m01 / M.m00);
-  return Point(X, Y);
-}
-
-
 
 string ShapeDetector::detect(const vector<Point> &input) {
   Mat curve = Mat(input);
@@ -147,7 +142,6 @@ string ShapeDetector::detect(const vector<Point> &input) {
 }
 
 vector<Point> ShapeDetector::getBiggestOctagon(const Mat &image) {
-
   Mat blured_image;
 
   blur(image, blured_image, Size(3, 3));
@@ -165,8 +159,7 @@ vector<Point> ShapeDetector::getBiggestOctagon(const Mat &image) {
   vector<Point> approx;
   for (size_t i = 0; i < contours.size(); i++) {
 
-     approxPolyDP(Mat(contours[i]), approx,
-                 arcLength(Mat(contours[i]), true) * 0.02, true);
+     approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true) * 0.02, true);
 
     shape = detect(approx);
     size = getArea(approx);
@@ -175,33 +168,5 @@ vector<Point> ShapeDetector::getBiggestOctagon(const Mat &image) {
       bigC = approx;
     }
   }
-
   return bigC;
-}
-
-void ShapeDetector::showAllShapes(const Mat &image) {
-
-  Mat blured_image;
-
-  blur(image, blured_image, Size(3, 3));
-  Canny(image, blured_image, 80, 240, 3);
-
-  vector<vector<Point>> contours;
-  findContours(blured_image, contours, CV_RETR_EXTERNAL,
-               CV_CHAIN_APPROX_SIMPLE);
-
-  string shape;
-  Point pt;
-  for (size_t i = 0; i < contours.size(); i++) {
-    shape = detect(contours[i]);
-
-    if (shape != "unidentified") {
-      pt = getCenter(contours[i]);
-
-      putText(image, shape, pt, FONT_HERSHEY_SIMPLEX, 0.5,
-              Scalar(255, 255, 255), 2);
-      Scalar color = Scalar(0, 0, 255);
-      polylines(image, contours[i], true, color, 1, 8);
-    }
-  }
 }

@@ -24,7 +24,7 @@ leadCarScan carScan;
 int CountWhitePixels(Mat img);
 string leadCarStatus(double areaOfContour);
 Mat getInterval(Mat img, string color);
-array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO , int BLUEINSIGN);
+array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, int BLUEINSIGN);
 float getSensorData(float distanceMessage, int sendStamp, float &totalSum, int &counter, bool &gotNewDataFromLeft, int &falseCounter);
 bool stopSignRed( vector<Point> contour,Mat img , bool VIDEO , int AMOUNTOFRED);
 
@@ -52,13 +52,11 @@ int32_t main(int32_t argc, char **argv) {
         unique_ptr<cluon::SharedMemory> sharedMemory{new cluon::SharedMemory{NAME}};
         const bool VERBOSE{commandlineArguments.count("verbose") != 0};
         const bool VIDEO{commandlineArguments.count("video") != 0};
-        const uint16_t MISSEDSIGNS{static_cast<uint16_t>(stoi(commandlineArguments["missed"]))};
-        const double MINAREA{static_cast<double>(stod(commandlineArguments["minarea"]))};
-        const uint16_t LOOKLEFT{static_cast<uint16_t>(stoi(commandlineArguments["look"]))};
-        const uint16_t AMOUNTOFRED{static_cast<uint16_t>(stoi(commandlineArguments["red"]))};
-        const uint16_t BLUEINSIGN{static_cast<uint16_t>(stoi(commandlineArguments["blue"]))};
-        const bool ENABLECALIBRATION{commandlineArguments.count("calib") != 0};
-
+        const uint16_t MISSEDSIGNS{3};
+        const double MINAREA = 1000;
+        const uint16_t LOOKLEFT = 5;
+        const uint16_t AMOUNTOFRED = 1700;
+        const uint16_t BLUEINSIGN = 100;
 
         if (sharedMemory && sharedMemory->valid()) { 
             clog << argv[0] << ": Attached to shared memory '" << sharedMemory->name() << " (" << sharedMemory->size() << " bytes)." << endl;
@@ -97,9 +95,7 @@ int32_t main(int32_t argc, char **argv) {
             TrafficRules trafficSignRules;
             opendlv::proxy::PedalPositionRequest pedalReq;
 
-            leadCarScan leadCar;
             DriveMode driveMode;
-            CalibrateSteering calibrateSteering;
             LeadCarDistance leadCarDistance;
             InstructionMode instructionMode;
             instructionMode.directionAllowed(false);
@@ -128,16 +124,11 @@ int32_t main(int32_t argc, char **argv) {
                 Mat orangeInputImage = getInterval(img, "orange");
                 
                 if(mode == 0){
-                    trafficRules = ShapeDetection(img, VERBOSE, VIDEO, BLUEINSIGN);
+                    trafficRules = ShapeDetection(img, VERBOSE, BLUEINSIGN);
                     
                     //Follow lead car:
-                    areaOfContour = carScan.findLeadCar(orangeInputImage , VIDEO);
+                    areaOfContour = carScan.findLeadCar(orangeInputImage);
                     if(areaOfContour > 1000){
-                        leadCarSeen = true;
-                        if(ENABLECALIBRATION){
-                            calibrateSteering.CalibrateSteeringAngle(leadCar.CalibrateSteeringAngle(areaOfContour, orangeInputImage ,VERBOSE));
-                            od4.send(calibrateSteering);
-                        }
                         //cout << "areaOfContour for the lead car: " << areaOfContour << endl;
                         distance = leadCarStatus(areaOfContour); 
                         leadCarDistance.distance(distance);
@@ -146,7 +137,6 @@ int32_t main(int32_t argc, char **argv) {
                     
                     if(!leadCarSeen && lookLeft < LOOKLEFT){
                       //Find left car:
-                      //cout << "entered find left car" << endl;
                       leftCar = ccars.findCars(greenInputImage, 0, leftCar);
                       amountOfCars = leftCar;
                       lookLeft++;
@@ -165,13 +155,13 @@ int32_t main(int32_t argc, char **argv) {
 
                       bool red = stopSignRed(contour, img, VIDEO, AMOUNTOFRED);
                       
-                      double contArea = ssd.getArea(contour); //was area
+                      double contArea = ssd.getArea(contour); 
 
                       if(VERBOSE){
                         //cout << "Current Octagon area :" << area << endl;
                       }
 
-                      if(ssd.Threshhold_reached == false){ //was area
+                      if(ssd.Threshhold_reached == false){ 
                         ssd.setArea(contArea);
                         ssd.stopSignLogic(red);
                       }else{
@@ -188,13 +178,8 @@ int32_t main(int32_t argc, char **argv) {
                           od4.send(driveMode);
                       }
                     }
-
-                    //TODO add linearacceleration
-                    //TODO add calibration
-
                 } else {  //2nd mode
                     if(runOnce){
-                        //cout << "ran FIND FRONT RIGHT cars" << endl;
                         frontCar = ccars.findCars(greenInputImage, 1, frontCar); //needs to run after car has stopped fully
                         rightCar = ccars.findCars(greenInputImage, 2, rightCar);  //needs to run after car has stopped fully
                         amountOfCars = leftCar + frontCar + rightCar;
@@ -326,7 +311,6 @@ bool stopSignRed(vector<Point> contour , Mat img  , bool VIDEO, int  AMOUNTOFRED
     frame_thresholdred = getInterval(FullStopSign, "red");
     int WhitePixelsInStopSign = CountWhitePixels(frame_thresholdred);
 
-    //cout << "area of red" << WhitePixelsInStopSign << endl;
     if(VIDEO && WhitePixelsInStopSign > AMOUNTOFRED){
       imshow("FullStopSign" , FullStopSign);
     }

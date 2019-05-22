@@ -20,12 +20,15 @@ int countleft = 0;
 int countForward = 0;
 array<bool, 3> trafficSignArray = {true, true, true};
 
+
+//: count white pixels in the image.
 int CountWhitePixels(Mat img) {
   vector<Point> all_pixels;
   findNonZero(img, all_pixels);
   return all_pixels.size();
 }
 
+//: detect sign base on the blue area in the image.
 void DetectBlueArea(Mat full_sign, bool VERBOSE , int BLUEINSIGN) {
   // Right part of the image
   Mat image1(full_sign);
@@ -51,72 +54,33 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE , int BLUEINSIGN) {
   int WhiteInRight = CountWhitePixels(right_sign);
   int WhiteInLeft = CountWhitePixels(left_sign);
   int WhiteInTop = CountWhitePixels(top_sign);
-  if(VERBOSE){
-    //cout << "WHITE RIGHT: " << WhiteInRight << endl;
-    //cout << "WHITE LEFT: " << WhiteInLeft << endl;
-    //cout << "WHITE FORWARD: " << WhiteInTop << endl;
-  }
 
   // Logic to comparing the white erea
-  if (WhiteInLeft > WhiteInRight && WhiteInLeft - WhiteInRight > BLUEINSIGN &&
-      WhiteInLeft >= WhiteInTop &&  WhiteInRight + WhiteInLeft > 1000){//&& WhiteInTop == 0) {
-    trafficSignArray[2] = false;
-    cout << "==============can't turn right sign found==============" << endl;
-
-    //countRight++;
-  } else if (WhiteInRight > WhiteInLeft && WhiteInRight - WhiteInLeft > BLUEINSIGN &&
-             WhiteInRight >= WhiteInTop && WhiteInRight + WhiteInLeft > 1000){//&& WhiteInTop == 0) {
-    trafficSignArray[0] = false;
-    cout << "==============can't turn left sign found==============" << endl;
-    //countleft++;
+  if (WhiteInLeft > WhiteInRight && WhiteInLeft - WhiteInRight > BLUEINSIGN && WhiteInLeft >= WhiteInTop &&  WhiteInRight + WhiteInLeft > 1000){
+      trafficSignArray[2] = false;
+      if(VERBOSE){
+        cout << "==============can't turn right sign found==============" << endl;
+      }
+  } else if (WhiteInRight > WhiteInLeft && WhiteInRight - WhiteInLeft > BLUEINSIGN && WhiteInRight >= WhiteInTop && WhiteInRight + WhiteInLeft > 1000){
+      trafficSignArray[0] = false;
+      if(VERBOSE){
+        cout << "==============can't turn left sign found==============" << endl;
+      }
   }
-  /* 
-  else if (WhiteInRight != 0 && WhiteInLeft != 0 && WhiteInTop > 400) {
-    trafficSignArray[1] = false;
-    cout << "==============can't go forward sign found==============" << endl;
-    //countForward++;
-  }
-  /*
-  if (countRight > 1) {
-    trafficSignArray[2] = false;
-    if (VERBOSE)
-      cout << "can't turn right sign found" << endl;
-    // Restart the counts
-    countForward = 0;
-    countleft = 0;
-    countRight = 0;
-  }
-  if (countForward > 1) {
-    trafficSignArray[1] = false;
-    if (VERBOSE)
-      cout << "can't go forward sign found" << endl;
-    // Restart the counts
-    countForward = 0;
-    countleft = 0;
-    countRight = 0;
-  }
-  if (countleft > 1) {
-    trafficSignArray[0] = false;
-    if (VERBOSE)
-      cout << "can't turn left sign found" << endl;
-    // Restart the counts
-    countForward = 0;
-    countleft = 0;
-    countRight = 0;
-  }
-  */
 }
 
+
+//: Cut the upper right part of the image
 Mat GetCroppedImage(Mat img) {
   Mat image(img);
-  Rect myROI(img.size().width / 2, 0, img.size().width / 2,
-             img.size().height * 3 / 4);
+  Rect myROI(img.size().width / 2, 0, img.size().width / 2, img.size().height * 3 / 4);
   Mat croppedImage2 = image(myROI);
   medianBlur(croppedImage2, croppedImage2, 3);
   return croppedImage2;
 }
 
-array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO, int BLUEINSIGN) {
+//: detect a square in the image
+array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, int BLUEINSIGN) {
   Mat bw, grayImg;
   Mat croppedImage2 = GetCroppedImage(img);
   cvtColor(croppedImage2, grayImg, COLOR_BGR2GRAY);
@@ -128,12 +92,10 @@ array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO, int BLUEINSIGN)
   findContours(bw.clone(), contours2, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
 
   for (vector<Point>::size_type i = 0; i < contours2.size(); i++) {
-    approxPolyDP(Mat(contours2[i]), approx2,
-                 arcLength(Mat(contours2[i]), true) * 0.02, true);
+    approxPolyDP(Mat(contours2[i]), approx2, arcLength(Mat(contours2[i]), true) * 0.02, true);
     if (fabs(contourArea(contours2[i])) < 100 || !isContourConvex(approx2))
       continue;
     if (approx2.size() == 4) {
-      //cout << "found the square for the sign" << endl;
       Rect br = boundingRect(contours2[i]);
       Mat full_sign(croppedImage2, br);
 
@@ -145,11 +107,6 @@ array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO, int BLUEINSIGN)
       cvtColor(cut_image, cut_image, COLOR_BGR2HSV);
 
       inRange(cut_image, Scalar(80, 0, 0), Scalar(130, 255, 255), cut_image);
-
-      if (VIDEO){
-        imshow("cut sign", cut_image);
-
-      }
       try {
         if(trafficSignArray[0] && trafficSignArray[2]){
           DetectBlueArea(cut_image, VERBOSE, BLUEINSIGN);
@@ -159,11 +116,6 @@ array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO, int BLUEINSIGN)
           cout << "something bad happend" << endl;
       }
     }
-  }
-
-  if (VIDEO) {
-    imshow("bw", bw);
-    waitKey(1);
   }
   return trafficSignArray;
 }

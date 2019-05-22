@@ -3,11 +3,8 @@
 
 #include <stdio.h>
 #include <string>
-#include <linearAcceleration.cpp>
 
 using namespace std;
-
-linearAcceleration linearACC;
 
 bool directionAllowed(std::string, bool, bool, bool);
 
@@ -15,17 +12,10 @@ int32_t main(int32_t argc, char **argv) {
   int32_t retCode{1};
   auto commandlineArguments = cluon::getCommandlineArguments(argc, argv);
   if ((0 == commandlineArguments.count("cid"))) {
-    cerr << "         --cid:    CID of the OD4Session to send and receive "
-            "messages"
-         << endl;
+    cerr << "--cid:    CID of the OD4Session to send and receive messages" << endl;
   } else {
     const uint16_t CID{static_cast<uint16_t>(stoi(commandlineArguments["cid"]))};
-    const float SPEED{static_cast<float>(stof(commandlineArguments["speed"]))};
-    const float leftangle{static_cast<float>(stof(commandlineArguments["langle"]))};
-    const float rightangle{static_cast<float>(stof(commandlineArguments["rangle"]))};
-    const uint16_t leftdelay{static_cast<uint16_t>(stof(commandlineArguments["ldelay"]))};
-    const uint16_t rightdelay{static_cast<uint16_t>(stof(commandlineArguments["rdelay"]))};
-
+    const float SPEED = 0.109f;
     cluon::OD4Session od4{CID};
 
     opendlv::proxy::PedalPositionRequest pedalReq;
@@ -34,35 +24,15 @@ int32_t main(int32_t argc, char **argv) {
     bool directionInstructionMode = false;
     bool runOnce = true;
 
-    //: recive trafic sign rules.
-    od4.dataTrigger(2003, [&TurnLeft, &TurnRight, &GoForward](cluon::data::Envelope &&envelope) {
-      cout << "RECEIVED TRAFFIC SIGN MESSAGE" << endl;
-      TrafficRules trafficSignRules =
-          cluon::extractMessage<TrafficRules>(std::move(envelope));
-
-      TurnLeft = trafficSignRules.leftAllowed();
-      TurnRight = trafficSignRules.rightAllowed();
-      GoForward = trafficSignRules.forwardAllowed();
-      if(TurnLeft) cout << "CAN DRIVE LEFT" << endl;
-      if(GoForward) cout << "CAN DRIVE FORWARD" << endl;
-      if(TurnRight) cout << "CAN DRIVE RIGHT" << endl;
-    });
-
-
     //: Driving out of the intersection
-    od4.dataTrigger(2001, [&od4, &TurnLeft, &TurnRight, &GoForward, &pedalReq,
-                          &steerReq, &directionInstructionMode, &rightangle, &SPEED, &leftangle, &leftdelay, &rightdelay](cluon::data::Envelope &&envelope) {
-      DirectionInstruction receivedMsg =
-          cluon::extractMessage<DirectionInstruction>(std::move(envelope));
+    od4.dataTrigger(2001, [&od4, &TurnLeft, &TurnRight, &GoForward, &pedalReq, &steerReq, &directionInstructionMode, &SPEED](cluon::data::Envelope &&envelope) {
+      DirectionInstruction receivedMsg = cluon::extractMessage<DirectionInstruction>(std::move(envelope));
       DirectionResponse responseMsg;
-      std::cout << "RECEIVED DIRECTION: " << receivedMsg.direction()
-                << std::endl;
-      if (directionAllowed(receivedMsg.direction(), TurnLeft, TurnRight,
-                          GoForward) && directionInstructionMode) {
+      std::cout << "RECEIVED DIRECTION: " << receivedMsg.direction() << std::endl;
+      if (directionAllowed(receivedMsg.direction(), TurnLeft, TurnRight, GoForward) && directionInstructionMode) {
         std::cout << "ALLOWED. DRIVING NOW" << endl;
         responseMsg.response("Direction allowed");
 
-        //float speed = 0.12f;
         float initialBoostSpeed = 0.2f;
         float stop = 0.0f;
 
@@ -79,12 +49,12 @@ int32_t main(int32_t argc, char **argv) {
 
         pedalReq.position(SPEED);
         std::string direction = receivedMsg.direction();
-        float steer = direction == "left" ? leftangle : direction == "right" ? rightangle : 0.0f;
+        float steer = direction == "left" ? 0.12f : direction == "right" ? -0.4f : 0.0f;
         steerReq.groundSteering(steer);
         od4.send(steerReq);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         od4.send(pedalReq);
-        int delay = direction == "right" ? rightdelay : leftdelay;
+        int delay = direction == "right" ? 4000 : 7000;
         std::this_thread::sleep_for(std::chrono::milliseconds(delay));
         pedalReq.position(stop);
         steerReq.groundSteering(stop);
@@ -97,21 +67,32 @@ int32_t main(int32_t argc, char **argv) {
       od4.send(responseMsg);
     });
 
-     //bool runOnce = false;
+    //: receive trafic sign rules.
+    od4.dataTrigger(2003, [&TurnLeft, &TurnRight, &GoForward](cluon::data::Envelope &&envelope) {
+      cout << "RECEIVED TRAFFIC SIGN MESSAGE" << endl;
+      TrafficRules trafficSignRules = cluon::extractMessage<TrafficRules>(std::move(envelope));
+
+      TurnLeft = trafficSignRules.leftAllowed();
+      TurnRight = trafficSignRules.rightAllowed();
+      GoForward = trafficSignRules.forwardAllowed();
+      if(TurnLeft) cout << "CAN DRIVE LEFT" << endl;
+      if(GoForward) cout << "CAN DRIVE FORWARD" << endl;
+      if(TurnRight) cout << "CAN DRIVE RIGHT" << endl;
+    });
+
      bool afterStopSign = false;
 
     //: Setting the drive-mode
     od4.dataTrigger(2005, [&od4, &pedalReq, &SPEED, &afterStopSign](cluon::data::Envelope &&envelope) {
       DriveMode currentDriveMode = cluon::extractMessage<DriveMode>(std::move(envelope));
           bool atStopSign = currentDriveMode.atStopSign(); //e.g at stop sign
-          cout << "AFTER STOP SIGN? " << afterStopSign << endl;
           if(atStopSign && !afterStopSign){
-            cout << "ready for instruction" << endl;
+            cout << "at stop sign" << endl;
             pedalReq.position(0.0f);
             afterStopSign = true;
             currentDriveMode.mode(1);
           } else if(!atStopSign && !afterStopSign) {
-            cout << "Not ready for instruction" << endl;
+            cout << "driving to stop sign" << endl;
             pedalReq.position(SPEED);
             currentDriveMode.mode(0);
           }
@@ -119,15 +100,17 @@ int32_t main(int32_t argc, char **argv) {
           od4.send(currentDriveMode);
     });
 
+    //: Sets whether instruction is ready to be received
     od4.dataTrigger(2007, [&od4, &directionInstructionMode, &runOnce](cluon::data::Envelope &&envelope) {
       InstructionMode instructionMode = cluon::extractMessage<InstructionMode>(std::move(envelope));
       directionInstructionMode = instructionMode.directionAllowed();
-      if(directionInstructionMode && runOnce){
-        cout << "INSTRUCTION ALLOWED " << endl;
+      if(directionInstructionMode){
+        if(runOnce) cout << "INSTRUCTION ALLOWED" << endl;
         runOnce = false;
       } 
     });
 
+    //: ACC follow the lead car
     od4.dataTrigger(2008, [&od4 , &pedalReq, &SPEED](cluon::data::Envelope &&envelope) {
       LeadCarDistance leadCarDistance = cluon::extractMessage<LeadCarDistance>(std::move(envelope));
       if(leadCarDistance.distance() == "too close"){

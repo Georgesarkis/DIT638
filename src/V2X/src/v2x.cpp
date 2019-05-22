@@ -16,16 +16,16 @@ int32_t main(int32_t argc, char **argv) {
 
         cluon::OD4Session od4{CID};
 
-        //*** TODO: Can't send back and therefore receive a message of successful receipt ***//
-            od4.dataTrigger(2002, [](cluon::data::Envelope &&envelope) { 
-                DirectionResponse directionResponseMsg = cluon::extractMessage<DirectionResponse>(std::move(envelope));
-                cout << "MESSAGE: " << directionResponseMsg.response() << endl;
-                if(directionResponseMsg.response() == "Direction not allowed"){
-                    cout << directionResponseMsg.response() << ". Try again" << endl;
-                } else {
-                    cout << "Instruction successful" << endl;
-                }
-            });
+        //: instruction response from controller
+        od4.dataTrigger(2002, [](cluon::data::Envelope &&envelope) { 
+            DirectionResponse directionResponseMsg = cluon::extractMessage<DirectionResponse>(std::move(envelope));
+            cout << "MESSAGE: " << directionResponseMsg.response() << endl;
+            if(directionResponseMsg.response() == "Direction not allowed"){
+                cout << directionResponseMsg.response() << ". Try again" << endl;
+            } else {
+                cout << "Instruction successful" << endl;
+            }
+        });
 
         while (od4.isRunning()){
             string instruction;
