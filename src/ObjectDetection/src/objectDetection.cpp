@@ -191,6 +191,7 @@ int32_t main(int32_t argc, char **argv) {
                         od4.send(instructionMode);
                     } else {
                         //  **Credit: --->some of this code is based on example_control code, start*
+                        //Get sensor data from the front sensor and the left sensor:
                         auto onDistanceReading{
                           [&od4, &gotNewDataFromLeft,&leftSensorValue, &frontSensorValue,&frontTotalSum, &frontCounter, &leftCounter,&leftTotalSum, &falseCounter](cluon::data::Envelope &&envelope) {
                             auto msg = cluon::extractMessage<opendlv::proxy::DistanceReading>(std::move(envelope));
@@ -214,7 +215,7 @@ int32_t main(int32_t argc, char **argv) {
                         if (!gotNewDataFromLeft) {
                             falseCounter++;
                         }
-                        if (falseCounter >= 5) { // needed for the left sensor
+                        if (falseCounter >= 5) { // needed for the left sensor, in case there is nothing in front of the car we still want to send info to the function
                             amountOfCars = ccars.countPassingCars(0, amountOfCars, 1, blackInputImage);
                         } else {
                             amountOfCars = ccars.countPassingCars(leftSensorValue, amountOfCars, 1, blackInputImage);
