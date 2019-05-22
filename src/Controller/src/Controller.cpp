@@ -23,8 +23,8 @@ int32_t main(int32_t argc, char **argv) {
     const float SPEED{static_cast<float>(stof(commandlineArguments["speed"]))};
     const float leftangle{static_cast<float>(stof(commandlineArguments["langle"]))};
     const float rightangle{static_cast<float>(stof(commandlineArguments["rangle"]))};
-    const float leftdelay{static_cast<float>(stof(commandlineArguments["ldelay"]))};
-    const float rightdelay{static_cast<float>(stof(commandlineArguments["rdelay"]))};
+    const uint16_t leftdelay{static_cast<uint16_t>(stof(commandlineArguments["ldelay"]))};
+    const uint16_t rightdelay{static_cast<uint16_t>(stof(commandlineArguments["rdelay"]))};
 
     cluon::OD4Session od4{CID};
 
@@ -32,9 +32,7 @@ int32_t main(int32_t argc, char **argv) {
     opendlv::proxy::GroundSteeringRequest steerReq;
     bool TurnLeft, TurnRight, GoForward;
     bool directionInstructionMode = false;
-
-    double lastCalib = 0;
-
+    bool runOnce = true;
 
     //: recive trafic sign rules.
     od4.dataTrigger(2003, [&TurnLeft, &TurnRight, &GoForward](cluon::data::Envelope &&envelope) {
@@ -65,36 +63,28 @@ int32_t main(int32_t argc, char **argv) {
         responseMsg.response("Direction allowed");
 
         //float speed = 0.12f;
-        //float initialBoostSpeed = 0.2f;
+        float initialBoostSpeed = 0.2f;
         float stop = 0.0f;
-        //float leftSteerAngle = 0.11f;
-        //float rightSteerAngle = -0.4f;
 
-        //float forwardSteerAngle = -0.109f;
-        //uint16_t rightDelay = 3300;
-        //uint16_t otherDirectionDelay = 1900;
-        //uint16_t boostDelay = 5;
+        uint16_t boostDelay = 5;
         //** Initial boost to car **//
-        /*pedalReq.position(initialBoostSpeed);
+        pedalReq.position(initialBoostSpeed);
         od4.send(pedalReq);
         std::this_thread::sleep_for(std::chrono::milliseconds(boostDelay));
         pedalReq.position(stop);
         steerReq.groundSteering(stop);
         od4.send(steerReq);
-        od4.send(pedalReq);*/
+        od4.send(pedalReq);
         //** End initial boost **//
 
         pedalReq.position(SPEED);
         std::string direction = receivedMsg.direction();
-        float steer = direction == "left" ? leftangle : direction == "right" ? rightangle ? 0.0f;
-        //cout << "SPEED: " << pedalReq.position() << endl;
+        float steer = direction == "left" ? leftangle : direction == "right" ? rightangle : 0.0f;
         steerReq.groundSteering(steer);
-        cout << "STEER: " << steerReq.groundSteering() << endl;
         od4.send(steerReq);
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
         od4.send(pedalReq);
         int delay = direction == "right" ? rightdelay : leftdelay;
-        cout << "DELAY: " << delay << endl;
         std::this_thread::sleep_for(std::chrono::milliseconds(delay));
         pedalReq.position(stop);
         steerReq.groundSteering(stop);
@@ -114,15 +104,10 @@ int32_t main(int32_t argc, char **argv) {
     od4.dataTrigger(2005, [&od4, &pedalReq, &SPEED, &afterStopSign](cluon::data::Envelope &&envelope) {
       DriveMode currentDriveMode = cluon::extractMessage<DriveMode>(std::move(envelope));
           bool atStopSign = currentDriveMode.atStopSign(); //e.g at stop sign
-          //directionInstructionMode = currentDriveMode.directionInstruction();
           cout << "AFTER STOP SIGN? " << afterStopSign << endl;
           if(atStopSign && !afterStopSign){
             cout << "ready for instruction" << endl;
             pedalReq.position(0.0f);
-            /*if(!runOnce){
-              pedalReq.position(0.0f);
-              runOnce = true;
-            }*/
             afterStopSign = true;
             currentDriveMode.mode(1);
           } else if(!atStopSign && !afterStopSign) {
@@ -134,10 +119,13 @@ int32_t main(int32_t argc, char **argv) {
           od4.send(currentDriveMode);
     });
 
-    od4.dataTrigger(2007, [&od4, &directionInstructionMode](cluon::data::Envelope &&envelope) {
+    od4.dataTrigger(2007, [&od4, &directionInstructionMode, &runOnce](cluon::data::Envelope &&envelope) {
       InstructionMode instructionMode = cluon::extractMessage<InstructionMode>(std::move(envelope));
       directionInstructionMode = instructionMode.directionAllowed();
-      if(directionInstructionMode) cout << "INSTRUCTION ALLOWED " << endl;
+      if(directionInstructionMode && runOnce){
+        cout << "INSTRUCTION ALLOWED " << endl;
+        runOnce = false;
+      } 
     });
 
     od4.dataTrigger(2008, [&od4 , &pedalReq, &SPEED](cluon::data::Envelope &&envelope) {
@@ -149,17 +137,6 @@ int32_t main(int32_t argc, char **argv) {
       }
       od4.send(pedalReq);
     });
-
-    od4.dataTrigger(2006, [&od4, &steerReq, &lastCalib](cluon::data::Envelope &&envelope) {
-      CalibrateSteering calibrateSteering = cluon::extractMessage<CalibrateSteering>(std::move(envelope));
-      if (calibrateSteering.CalibrateSteeringAngle() != lastCalib) {
-        lastCalib = calibrateSteering.CalibrateSteeringAngle();
-        steerReq.groundSteering(calibrateSteering.CalibrateSteeringAngle());
-        od4.send(steerReq);
-        std::cout << "Calibrate Steering Angle: " << calibrateSteering.CalibrateSteeringAngle() << std::endl;
-      }
-    });
-
 
     while (od4.isRunning()) {
     }

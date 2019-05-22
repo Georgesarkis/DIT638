@@ -52,9 +52,9 @@ void DetectBlueArea(Mat full_sign, bool VERBOSE , int BLUEINSIGN) {
   int WhiteInLeft = CountWhitePixels(left_sign);
   int WhiteInTop = CountWhitePixels(top_sign);
   if(VERBOSE){
-    cout << "WHITE RIGHT: " << WhiteInRight << endl;
-    cout << "WHITE LEFT: " << WhiteInLeft << endl;
-    cout << "WHITE FORWARD: " << WhiteInTop << endl;
+    //cout << "WHITE RIGHT: " << WhiteInRight << endl;
+    //cout << "WHITE LEFT: " << WhiteInLeft << endl;
+    //cout << "WHITE FORWARD: " << WhiteInTop << endl;
   }
 
   // Logic to comparing the white erea
@@ -133,7 +133,7 @@ array<bool, 3> ShapeDetection(Mat img, bool VERBOSE, bool VIDEO, int BLUEINSIGN)
     if (fabs(contourArea(contours2[i])) < 100 || !isContourConvex(approx2))
       continue;
     if (approx2.size() == 4) {
-      cout << "found the square for the sign" << endl;
+      //cout << "found the square for the sign" << endl;
       Rect br = boundingRect(contours2[i]);
       Mat full_sign(croppedImage2, br);
 

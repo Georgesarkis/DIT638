@@ -29,6 +29,8 @@ int camTimeCounter = minTime + 1;
 int leftTimeCounter = minTime + 1;
 float previousSensorData = 0; 
 
+int carReallyPassed = 0; //added now
+
 bool carOnCamera = false;
 int carFound;
 
@@ -40,7 +42,7 @@ findContoursInROI(int xC, int yC, int widthC, int heightC, Mat image);
 int countCars::findCars(Mat image, int side, int prevAmount) { // count the amount of contours in this left rectangle and
   
   if (side == 0) { // left side roi
-    cout << "in find left car" << endl;
+    //cout << "in find left car" << endl;
     x = 0;
     y = 0;
     width = 150; //was 130
@@ -65,7 +67,7 @@ int countCars::findCars(Mat image, int side, int prevAmount) { // count the amou
     for (size_t i = 0; i < foundContours.size(); i++) {
       // cout << "           contour area: " << contourArea(foundContours[i]) << endl;
       if (side == 0 && !enteredLeft && prevAmount == 0) { // left cars
-        cout << "           contour area LEFT: " << contourArea(foundContours[i]) << endl;        
+        //cout << "           contour area LEFT: " << contourArea(foundContours[i]) << endl;        
         if (contourArea(foundContours[i]) > 100 && contourArea(foundContours[i]) < 2000) { //maybe change to 740
           cout << "----->left car found" << endl;
           enteredLeft = true;
@@ -76,9 +78,9 @@ int countCars::findCars(Mat image, int side, int prevAmount) { // count the amou
         }
       }
       if (side == 1 && !enteredFront && prevAmount == 0) { // front cars
-        cout << "           contour area FRONT: " << contourArea(foundContours[i]) << endl;        
-        if (contourArea(foundContours[i]) > 740 && contourArea(foundContours[i]) < 2200) { // change these numbers!!! was 450 to 650 for both front and right
-          cout << "----->front car found" << endl;
+        if (contourArea(foundContours[i]) > 880 && contourArea(foundContours[i]) < 2200) { // change these numbers!!! was 450 to 650 for both front and right
+          cout << "----->front car found at " << contourArea(foundContours[i]) << endl;
+          //cout << "           contour area FRONT: " << contourArea(foundContours[i]) << endl;        
           enteredFront = true;
           return 1;
         }
@@ -87,9 +89,9 @@ int countCars::findCars(Mat image, int side, int prevAmount) { // count the amou
         }
       }
       if (side == 2 && !enteredRight && prevAmount == 0) { // right cars  //for this we should move the green note forward on the car
-        cout << "           contour area RIGHT: " << contourArea(foundContours[i]) << endl;        
         if (contourArea(foundContours[i]) > 740 && contourArea(foundContours[i]) < 3500) { // change these numbers!!!
-          cout << "----->right car found" << endl;
+          cout << "----->right car found at " << contourArea(foundContours[i]) << endl;
+          //cout << "           contour area RIGHT: " << contourArea(foundContours[i]) << endl;        
           enteredRight = true;
           return 1;
         }
@@ -117,30 +119,38 @@ int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, i
     leftTimeCounter = minTime + 1;
   }
 
-  // cout << ">>>>TC amount: " << timeCounter << endl;
   if (sensorType == 0) { // front ultrasonic
-    if (sensorDistance <= 0.58 && //maybe 0.60 is fine, or 0.55
-        sensorDistance >= 0.03) { // make these variables
-      if (currentAmountOfCars > 0 && !carPassed) {
+    //cout << "FRONT SENSOR DISTANCE " << sensorDistance << " cars rly passed: " << carReallyPassed << endl;
+    if ((sensorDistance < 0.50 && sensorDistance >= 0.03) || (sensorDistance > 0.61 && sensorDistance < 0.7)) { //maybe change to 0.7 or something
+      
+      carReallyPassed++;
+
+      if (currentAmountOfCars > 0 && !carPassed && carReallyPassed >= 3) {
         if (camTimeCounter < minTime || timeCounter < minTime) {
-          cout << "***FRONT DONT count this car" << endl;
-        } else {
+          //cout << "***FRONT DONT count this car" << endl;
+        } 
+        else {
           timeCounter = 0;
-          currentAmountOfCars--;
-          cout << "       one car passed FROOOOOOOONT at DISTANCE: " << sensorDistance << endl;
+            currentAmountOfCars--;
+            cout << "       one car passed FROOOOOOOONT at DISTANCE: " << sensorDistance << endl;
         }
         carPassed = true;
       }
+
     }
-  } else if (sensorType == 1) { // left-side ir sensor
+    else{
+        carReallyPassed = 0;
+    }  
+  } 
+  else if (sensorType == 1) { // left-side ir sensor
     // cout << "left SENSOR: " << sensorDistance << endl;
-    if (sensorDistance <= 0.31 &&
-        sensorDistance >= 0.045) { // make these variables
+    if (sensorDistance <= 0.31 && sensorDistance >= 0.045) { // make these variables
       if (currentAmountOfCars > 0 && !carPassed) {
         if (timeCounter < minTime || camTimeCounter < minTime || leftTimeCounter < minTime) {
-          cout << "DONT count this car" << endl; // maybe set carpassed = true here för att den inte ska fortsätta räkna varje vi ser som ny
-          carPassed = true; // added this
-        } else {
+          //cout << "LEFT DONT count this car" << endl; 
+          carPassed = true;
+        } 
+        else {
           cout << "       one car passed LEEEEEEEEEEEEFT side at DISTANCE: " << sensorDistance << endl;
           currentAmountOfCars--;
           carPassed = true;
@@ -152,19 +162,19 @@ int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, i
 
   x = 0;
   y = 285;
-  width = 210;
+  width = 260; //210
   height = 65;
 
   foundContours = findContoursInROI(x, y, width, height, image);
 
   if (foundContours.size() >= 1) {
     for (size_t i = 0; i < foundContours.size(); i++) {
-      // cout << "contour: " << contourArea(foundContours[i]) << endl;
-      if (contourArea(foundContours[i]) > 20 && contourArea(foundContours[i]) < 650) { // changed from 60 to 20
+      //cout << "CAMERA contour: " << contourArea(foundContours[i]) << endl;
+      if (contourArea(foundContours[i]) > 20 && contourArea(foundContours[i]) < 650) { // changed from 60 to 20,from 20 to 2
         if (currentAmountOfCars > 0 && !carPassed) {
           if (camTimeCounter > minTime && timeCounter > minTime) {
             currentAmountOfCars--;
-            cout << "       1 car passed CAMERA" << endl;
+            cout << "       1 car passed CAMERA at area " << contourArea(foundContours[i]) << endl;
             camTimeCounter = 0;
           }
           carPassed = true;
@@ -181,7 +191,6 @@ int countCars::countPassingCars(float sensorDistance, int currentAmountOfCars, i
 
   if ((sensorDistance > 0.65 || sensorDistance < 0.03) && (previousSensorData > 0.65 || previousSensorData < 0.03) && !carOnCamera && currentAmountOfCars > 0) {
     carPassed = false;
-    // cout << "       ***no car***" << endl; //stops showing up after having counted 3 cars
   }
 
   timeCounter++;
@@ -212,18 +221,8 @@ std::vector<std::vector<cv::Point>> countCars::findContoursInROI(int xC, int yC,
     cv::approxPolyDP(contours[i], contoursPoly[i], 3, true);
     boundRect[i] = cv::boundingRect(contoursPoly[i]);
   }
-  /*
-  if(onpc){
-      cv::imshow("Contour", image);
-      cv::waitKey(1);
-  }
-  */
   return contours;
 }
-
-// we can also like compare images, like do some object detection of an empty
-// intersection and then when its not empty we can tell something is driving
-// there and we remove it from the list
 
 /*
     counting passing cars,
@@ -241,18 +240,4 @@ std::vector<std::vector<cv::Point>> countCars::findContoursInROI(int xC, int yC,
 
         difficult cases: (wont be reached by sensor)
             car in front drives right
-                for this we can set up a small roi on the left part of the
-   intersection and try to detect a big amount of black, and when we do we
-                remove a car from the queue
-
-                looking at the vids tho this wont always work if the car driver
-   doesnt clearly enter the intersection and right away drives to the side, then
-   the car might not enter the roi
-
-
-        current problems after adding back sensors and camera together:
-            a car driving past the camera and then the sensor and maybe vice
-   versa will be seen as 2 cars a if the car drives by a sensor it will be
-   counted as 3 cars if the car from front to right deosnt drive very closely
-   into the intersection it wont be seen
 */
