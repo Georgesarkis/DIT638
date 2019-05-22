@@ -17,8 +17,6 @@ public:
   string detect(const vector<Point> &input);
   double getArea(const vector<Point> &input);
   vector<Point> getBiggestOctagon(const Mat &image);
-  void showAllShapes(const Mat &image);
-  bool stopSignInRange(const double &input);
   void setMinArea(double input);
   void setNumberOfMissedSign(int numberOfMissedSigns);
   bool lookForStopSign(bool red);
@@ -26,7 +24,6 @@ public:
   bool stopSignLogic(bool red);
   void setArea(double &input);
   bool same(double a, double b);
-
 };
 
 double minStopSignArea = 1000;
@@ -104,6 +101,7 @@ bool ShapeDetector::stopSignLogic(bool red) {
 
 }
 
+// Get's the shape of the a contour
 string ShapeDetector::detect(const vector<Point> &input) {
   Mat curve = Mat(input);
 
@@ -141,6 +139,7 @@ string ShapeDetector::detect(const vector<Point> &input) {
   return shape;
 }
 
+//: Get's the biggest octagon contour from a image
 vector<Point> ShapeDetector::getBiggestOctagon(const Mat &image) {
   Mat blured_image;
 
