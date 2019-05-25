@@ -133,6 +133,7 @@ int32_t main(int32_t argc, char **argv) {
                         distance = leadCarStatus(areaOfContour); 
                         leadCarDistance.distance(distance);
                         od4.send(leadCarDistance);
+                        leadCarSeen = true; 
                     } 
                     
                     if(!leadCarSeen && lookLeft < LOOKLEFT){
