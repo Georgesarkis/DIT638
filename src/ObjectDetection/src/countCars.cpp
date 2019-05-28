@@ -72,7 +72,7 @@ int countCars::findCars(Mat image, int side, int prevAmount) {
           return 1;
         }
         if (i == foundContours.size()) {
-          enteredFront = true;
+          enteredLeft = true;
         }
       }
       if (side == 1 && !enteredFront && prevAmount == 0) { // front cars
